@@ -71,7 +71,7 @@ The data model for this project is structured around five primary components: Us
 |-----------------------|-----------------------------------------------------------------------------------------------------------------------|
 | **Airtable API**      | This API can be used to integrate data in Airtable with any external system. [Introduction - Airtable Web API](https://airtable.com/api) |
 | **Booqable API**      | This API can be used to view and edit information from Booqable. [Introduction – Booqable API](https://booqable.com/api) |
-| **Gmail API**         | This API can be used to automate the process of sending emails. [Sending Email | Gmail - Google for Developers](https://developers.google.com/gmail/api) |
+| **Gmail API**         | This API can be used to automate the process of sending emails. [Gmail API Documentation](https://developers.google.com/gmail/api/guides) |
 | **Venmo API**         | This API can be used to automate the payment process through Venmo. [Venmo API Documentation](https://venmo.com/docs/overview/) |
 | **Square API**        | This API can be used to automate the payment process through Square. [Square APIs & SDKs](https://squareup.com/us/en/developers) |
 | **Firebase API**      | This API can be used to link the webapp & iOS databases. [Firebase API Documentation](https://firebase.google.com/docs/) |
