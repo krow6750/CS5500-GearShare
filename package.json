@@ -1,0 +1,34 @@
+{
+  "name": "cs5500-gearshare",
+  "version": "1.0.0",
+  "description": "## Introduction This document provides audiences with a comprehensive overview of the project aimed at enhancing the data management system for Gear Share.",
+  "main": "sever.js",
+  "scripts": {
+    "server": "nodemon backendServer/server.js"
+  },
+  "type":"module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krow6750/CS5500-GearShare.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/krow6750/CS5500-GearShare/issues"
+  },
+  "homepage": "https://github.com/krow6750/CS5500-GearShare#readme",
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
