@@ -5,7 +5,7 @@
 ## Dependencies Needed
 To set up and run this server, ensure the following dependencies are installed:
 ```bash
-npm install express dotenv <del>mongoes</del>
+npm install express dotenv axios ~~mongoes~~
 ```
 
 ---
