@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const airtableBase = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base('appJxYkGLXrTQ7RWb'); // Repair Tickets Base
-const userBase = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base('appWQDpdrrzIpTBff'); // Users Base
+const airtableBase = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base('appJxYkGLXrTQ7RWb'); 
+const userBase = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base('appWQDpdrrzIpTBff'); 
 
 app.use(express.json());
 
@@ -103,6 +103,69 @@ app.post("/sync", async (req, res) => {
   } catch (error) {
     console.error("Error during sync:", error);
     res.status(500).send("Sync failed.");
+  }
+});
+
+app.post("/repair-ticket", async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    itemType,
+    damageDescription,
+    repairCost,
+    status,
+    photoURL
+  } = req.body;
+
+  if (!firstName || !lastName || !itemType || !damageDescription || !status) {
+    return res.status(400).send("Required fields: firstName, lastName, itemType, damageDescription, status.");
+  }
+
+  const date = new Date();
+  const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}/${date.getFullYear()}`;
+
+  try {
+    const newRepairTicket = await airtableBase('Grid view').create({
+      "First Name": firstName,
+      "Last Name": lastName,
+      "Item Type": itemType,
+      "Damage Description": damageDescription,
+      "Repair Cost": repairCost || 0,
+      "Status": status,
+      "Date Submitted": formattedDate,
+      "Photo (URL)": photoURL || ""
+    });
+
+    res.status(201).json({
+      message: "Repair ticket created successfully",
+      repairTicket: newRepairTicket.fields
+    });
+  } catch (error) {
+    console.error("Error creating repair ticket:", error);
+    res.status(500).send("Failed to create repair ticket.");
+  }
+});
+
+
+app.delete("/repair-ticket/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (!id.startsWith("rec")) {
+      return res.status(400).send("Invalid record ID format.");
+    }
+
+    await airtableBase('Grid view').destroy(id);
+
+    res.status(200).json({
+      message: "Repair ticket deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting repair ticket:", error);
+    res.status(500).send("Failed to delete repair ticket.");
   }
 });
 

@@ -194,5 +194,53 @@ syncData();
 
 ---
 
+### 8. Add Repair Ticket
+- **URL**: `/repair-ticket`
+- **Method**: `POST`
+- **Description**: Adds a new repair ticket to the Airtable "Repair Tickets" table. The `dateSubmitted` field is automatically set to the current date in `MM/DD/YYYY` format.
+- **Request Body Example**:
+    ```json
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "itemType": "Laptop",
+      "damageDescription": "Screen cracked",
+      "repairCost": 120,
+      "status": "Pending",
+      "photoURL": "http://example.com/photo.jpg (optional)" 
+    }
+    ```
+- **Response Example**:
+    ```json
+    {
+      "message": "Repair ticket created successfully",
+      "repairTicket": {
+        "First Name": "John",
+        "Last Name": "Doe",
+        "Item Type": "Laptop",
+        "Damage Description": "Screen cracked",
+        "Repair Cost": 120,
+        "Status": "Pending",
+        "Date Submitted": "10/12/2024",
+        "Photo (URL)": "http://example.com/photo.jpg"
+      }
+    }
+    ```
 
+---
+
+### 9. Delete Repair Ticket
+- **URL**: `/repair-ticket/:id`
+- **Method**: `DELETE`
+- **Description**: Deletes a repair ticket from the Airtable "Repair Tickets" table.
+- **Path Parameters**:
+  - `:id` (string): The Airtable record ID (must start with `rec`).
+- **Response Example**:
+    ```json
+    {
+      "message": "Repair ticket deleted successfully"
+    }
+    ```
+
+---
 
