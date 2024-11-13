@@ -137,20 +137,17 @@
     }
   
     async function updateRepairTicket(ticketId) {
-      const updates = {};
-      updates.firstName = prompt("Enter new First Name (leave blank to skip):");
-      updates.lastName = prompt("Enter new Last Name (leave blank to skip):");
-      updates.itemType = prompt("Enter new Item Type (leave blank to skip):");
-      updates.damageDescription = prompt("Enter new Damage Description (leave blank to skip):");
-      updates.repairCost = prompt("Enter new Repair Cost (leave blank to skip):");
-      updates.status = prompt("Enter new Status");
-  
-      Object.keys(updates).forEach(key => {
-        if (!updates[key]) delete updates[key];
-      });
-  
-      if (Object.keys(updates).length === 0) return alert("No updates provided.");
-  
+      const jsonInput = prompt("Enter updates in JSON format (e.g., {\"status\": \"Completed\", \"repairCost\": 200}):");
+
+      if (!jsonInput) return alert("No input provided.");
+
+      let updates;
+      try {
+        updates = JSON.parse(jsonInput);
+      } catch (error) {
+        return alert("Invalid JSON format. Please try again.");
+      }
+
       try {
         const response = await fetch(`/update-airtable-entry/${ticketId}`, {
           method: "PUT",
@@ -162,8 +159,9 @@
         fetchRepairData();
       } catch (error) {
         console.error("Error updating repair ticket:", error);
-      }
+        alert("Error updating repair ticket. Check the console for details.");
     }
+  }
   
     document.getElementById("add-repair-button").addEventListener("click", async () => {
       const firstName = prompt("Enter First Name:");
@@ -245,17 +243,16 @@
     }
 
     async function updateUser(userId) {
-      const updates = {};
-      updates.firstName = prompt("Enter new First Name (leave blank to skip):");
-      updates.lastName = prompt("Enter new Last Name (leave blank to skip):");
-      updates.email = prompt("Enter new Email (leave blank to skip):");
-      updates.authentication = prompt("Enter new Authentication (ordinary/admin, leave blank to skip):");
+      const jsonInput = prompt("Enter updates in JSON format (e.g., {\"firstName\": \"John\", \"email\": \"john@example.com\"}):");
 
-      Object.keys(updates).forEach(key => {
-        if (!updates[key]) delete updates[key];
-      });
+      if (!jsonInput) return alert("No input provided.");
 
-      if (Object.keys(updates).length === 0) return alert("No updates provided.");
+      let updates;
+      try {
+        updates = JSON.parse(jsonInput);
+      } catch (error) {
+        return alert("Invalid JSON format. Please try again.");
+      }
 
       try {
         const response = await fetch(`/update-user/${userId}`, {
@@ -268,8 +265,9 @@
         fetchUserData();
       } catch (error) {
         console.error("Error updating user:", error);
-      }
+        alert("Error updating user. Check the console for details.");
     }
+  }
 
     document.getElementById("create-user-button").addEventListener("click", async () => {
       const firstName = prompt("Enter First Name:");
