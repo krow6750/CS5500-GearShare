@@ -137,7 +137,7 @@
     }
   
     async function updateRepairTicket(ticketId) {
-      const jsonInput = prompt("Enter updates in JSON format (e.g., {\"status\": \"Completed\", \"repairCost\": 200}):");
+      const jsonInput = prompt("Enter updates in JSON format");
 
       if (!jsonInput) return alert("No input provided.");
 
@@ -243,7 +243,7 @@
     }
 
     async function updateUser(userId) {
-      const jsonInput = prompt("Enter updates in JSON format (e.g., {\"firstName\": \"John\", \"email\": \"john@example.com\"}):");
+      const jsonInput = prompt("Enter updates in JSON format");
 
       if (!jsonInput) return alert("No input provided.");
 
