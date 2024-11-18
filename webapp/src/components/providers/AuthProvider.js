@@ -1,16 +1,17 @@
 'use client';
 
 import { createContext, useContext, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase/firebase-config';
 import { onAuthStateChanged } from 'firebase/auth';
 import useAuthStore from '@/store/authStore';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const { setUser, setLoading } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -25,17 +26,25 @@ export function AuthProvider({ children }) {
         user.getIdToken().then((token) => {
           document.cookie = `token=${token}; path=/`;
         });
-        router.push('/dashboard');
+        
+        // Only redirect if we're not already in the dashboard
+        if (!pathname.startsWith('/dashboard')) {
+          router.push('/dashboard');
+        }
       } else {
         setUser(null);
         document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        router.push('/login');
+        
+        // Only redirect to login if we're trying to access protected routes
+        if (pathname.startsWith('/dashboard')) {
+          router.push('/login');
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [setUser, setLoading, router]);
+  }, [setUser, setLoading, router, pathname]);
 
   return <AuthContext.Provider value={{}}>{children}</AuthContext.Provider>;
 }

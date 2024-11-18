@@ -1,103 +1,165 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { firebaseDB } from '@/lib/firebase/db';
 import { COLLECTIONS, STATUS } from '@/lib/firebase/models';
-import { syncService } from '@/lib/sync/syncService';
+import AddEquipmentModal from '@/components/equipment/AddEquipmentModal';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useSidebar } from '../../../contexts/SidebarContext';
 
-export default function InventoryPage() {
+const ITEMS_PER_PAGE = 15;
+
+export default function EquipmentPage() {
+  const { isExpanded } = useSidebar();
+  const [isMounted, setIsMounted] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const queryClient = useQueryClient();
 
-  // Fetch equipment data
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []); 
+
   const { data: equipment, isLoading } = useQuery({
     queryKey: ['equipment'],
     queryFn: async () => {
-      const items = await firebaseDB.query(COLLECTIONS.INVENTORY, []);
+      const items = await firebaseDB.query(COLLECTIONS.EQUIPMENT);
       return items;
     }
   });
 
+  if (!isMounted) return null;
+  if (isLoading) return <LoadingSpinner />;
+
+  const handleAddSuccess = () => {
+    queryClient.invalidateQueries(['equipment']);
+  };
+
   const statusColors = {
-    [STATUS.EQUIPMENT.AVAILABLE]: 'bg-green-100 text-green-800',
-    [STATUS.EQUIPMENT.RENTED]: 'bg-blue-100 text-blue-800',
+    [STATUS.EQUIPMENT.AVAILABLE]: 'bg-emerald-100 text-emerald-800',
+    [STATUS.EQUIPMENT.RENTED]: 'bg-slate-100 text-slate-800',
     [STATUS.EQUIPMENT.IN_REPAIR]: 'bg-red-100 text-red-800'
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  const totalPages = Math.ceil((equipment?.length || 0) / ITEMS_PER_PAGE);
+  const paginatedEquipment = equipment?.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Equipment</h1>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          Add Equipment
-        </button>
+    <div className={`
+      transition-all duration-300
+      ${isExpanded ? 'ml-64' : 'ml-20'}
+      pr-8 pl-8
+    `}>
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Equipment</h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Manage your equipment inventory
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition-colors"
+          >
+            Add Equipment
+          </button>
+        </div>
       </div>
 
-      {/* Equipment List */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Condition
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {equipment?.map((item) => (
-              <tr key={item.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{item.category}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[item.status]}`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{item.condition}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-4">
-                    Edit
-                  </button>
-                  <button className="text-red-600 hover:text-red-900">
-                    Delete
-                  </button>
-                </td>
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full divide-y divide-gray-200">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Price</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {paginatedEquipment?.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    {item.equipment_id || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    {item.name || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    {item.equipment_category || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      statusColors[item.status] || 'bg-slate-100 text-slate-800'
+                    }`}>
+                      {(item.status || 'UNKNOWN').toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    ${item.price ? Number(item.price).toFixed(2) : '0.00'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* We'll need to create an AddEquipmentModal component next */}
+      <div className="mt-4 flex flex-col sm:flex-row items-center justify-between p-4 bg-white rounded-lg border border-slate-200">
+        <div className="text-sm text-slate-600 mb-4 sm:mb-0">
+          Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, equipment?.length || 0)} of {equipment?.length || 0}
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-2">
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-3 py-1 text-sm rounded-md ${
+                  currentPage === i + 1
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      <AddEquipmentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 }

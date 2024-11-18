@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-export async function middleware(request) {
+export function middleware(request) {
+  // Only run middleware for dashboard routes
+  if (!request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get('token');
   const path = request.nextUrl.pathname;
   const isPublicPath = path === '/login' || path === '/register';
@@ -17,5 +22,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/dashboard/:path*']
 };

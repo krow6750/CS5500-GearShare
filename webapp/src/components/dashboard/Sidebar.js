@@ -8,8 +8,12 @@ import {
   WrenchScrewdriverIcon,
   CubeIcon,
   ClockIcon,
-  Cog6ToothIcon 
+  Cog6ToothIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EnvelopeIcon 
 } from '@heroicons/react/24/outline';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -17,45 +21,59 @@ const navigation = [
   { name: 'Repairs', href: '/dashboard/repairs', icon: WrenchScrewdriverIcon },
   { name: 'Rentals', href: '/dashboard/rentals', icon: ClipboardDocumentListIcon },
   { name: 'Activity', href: '/dashboard/activity', icon: ClockIcon },
+  { name: 'Email Templates', href: '/dashboard/email-templates', icon: EnvelopeIcon }, 
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isExpanded, setIsExpanded } = useSidebar();
 
   return (
-    <div className="flex h-full flex-col bg-gray-800">
-      <div className="flex flex-1 flex-col overflow-y-auto">
-        <nav className="flex-1 space-y-1 px-2 py-4">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`
-                  group flex items-center px-2 py-2 text-sm font-medium rounded-md
-                  ${isActive
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  }
-                `}
-              >
-                <item.icon
-                  className={`
-                    mr-3 h-6 w-6 flex-shrink-0
-                    ${isActive
-                      ? 'text-white'
-                      : 'text-gray-400 group-hover:text-white'
-                    }
-                  `}
-                />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
+    <div className={`
+      fixed top-0 left-0 h-full bg-[#09090B] text-slate-200
+      transition-all duration-300 ease-in-out z-30
+      ${isExpanded ? 'w-64' : 'w-20'}
+    `}>
+      <div className="flex items-center h-16 px-6 relative">
+        <span className={`text-white font-bold transition-all duration-300 ${
+          isExpanded ? 'text-xl' : 'text-sm'
+        }`}>
+          {isExpanded ? 'GearShare' : 'GS'}
+        </span>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="absolute -right-4 top-1/2 -translate-y-1/2 z-50
+            bg-[#09090B] text-slate-200 p-2 rounded-full shadow-lg
+            hover:bg-slate-800 transition-all duration-300 ease-in-out
+            border border-slate-700 w-8 h-8 flex items-center justify-center"
+        >
+          {isExpanded ? (
+            <ChevronLeftIcon className="h-5 w-5" />
+          ) : (
+            <ChevronRightIcon className="h-5 w-5" />
+          )}
+        </button>
       </div>
+
+      <nav className="mt-8">
+        {navigation.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`
+              flex items-center px-6 py-3
+              transition-colors duration-200
+              ${pathname === item.href 
+                ? 'bg-[#18181B] text-emerald-500 border-r-2 border-emerald-500' 
+                : 'text-slate-400 hover:bg-[#18181B] hover:text-slate-200'}
+            `}
+          >
+            <item.icon className={`h-5 w-5 ${isExpanded ? 'mr-3' : ''}`} />
+            {isExpanded && <span className="font-medium">{item.name}</span>}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }
