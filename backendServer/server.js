@@ -61,6 +61,21 @@ app.put("/update-airtable-entry/:id", async (req, res) => {
 
     const updatedRecord = await airtableBase('Grid view').update(id, updates);
 
+    if (updates["Status"] && (updates["Status"] === "In Progress" || updates["Status"] === "Completed")) {
+      await airtableBase("Email").create({
+        "First Name": updatedRecord.fields["First Name"],
+        "Last Name": updatedRecord.fields["Last Name"],
+        "Item Type": updatedRecord.fields["Item Type"],
+        "Damage Description": updatedRecord.fields["Damage Description"],
+        "Repair Cost": updatedRecord.fields["Repair Cost"],
+        "Status": updatedRecord.fields["Status"],
+        "Date Submitted": updatedRecord.fields["Date Submitted"],
+        "Photo (URL)": updatedRecord.fields["Photo (URL)"] || "",
+      });
+
+      console.log(`Repair Ticket ${id} added to the Email table.`);
+    }
+
     res.status(200).json({
       message: "Record updated successfully",
       updatedRecord: updatedRecord.fields
