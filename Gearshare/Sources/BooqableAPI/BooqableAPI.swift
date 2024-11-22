@@ -296,13 +296,49 @@ class BooqableAPI {
                 }
 
                 do {
-                    if let responseString = String(data: data, encoding: .utf8) {
-                    print("Raw Response: \(responseString)") // Add this line to debug
-                }
                     let orderResponse = try JSONDecoder().decode(OrderResponse.self, from: data)
                     print("Response Data: \(orderResponse)")
                     let assignedCustomerId = orderResponse.data.attributes.customer_id
                     completion(.success(assignedCustomerId))
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+    // Update stops_at for an order
+    func updateStopsAt(orderId: String, stopsAt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let orderData: [String: Any] = [
+            "data": [
+                "id": orderId,
+                "type": "orders",
+                "attributes": [
+                    "stops_at": stopsAt
+                ]
+            ]
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: orderData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/orders/\(orderId)", method: "PUT", body: jsonData)
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+
+                do {
+                    let orderResponse = try JSONDecoder().decode(OrderResponse.self, from: data)
+                    let updatedStopsAt = orderResponse.data.attributes.stops_at
+                    completion(.success(updatedStopsAt))
                 } catch {
                     completion(.failure(error))
                 }
@@ -368,10 +404,10 @@ struct Item {
 // MARK: - Order Models
 struct OrderAttributes: Codable {
     let status: String
-    let starts_at: String 
-    let stops_at: String 
+    let starts_at: String
+    let stops_at: String
     let price_in_cents: Int
-    let customer_id: String 
+    let customer_id: String
 }
 
 struct OrderData: Codable {
