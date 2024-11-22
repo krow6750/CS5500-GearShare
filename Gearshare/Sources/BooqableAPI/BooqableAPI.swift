@@ -224,6 +224,46 @@ class BooqableAPI {
             }
         }.resume()
     }
+
+    // Create Order 
+    func createOrder(startsAt: String, stopsAt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let orderData: [String: Any] = [
+            "data": [
+                "type": "orders",
+                "attributes": [
+                    "starts_at": startsAt,
+                    "stops_at": stopsAt
+                ]
+            ]
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: orderData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/orders", method: "POST", body: jsonData)
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+                
+                do {
+                    let orderResponse = try JSONDecoder().decode(OrderResponse.self, from: data)
+                    let orderId = orderResponse.data.id  
+                    
+                    completion(.success(orderId))  
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
 }
 
 // MARK: - Customer Models
@@ -301,4 +341,9 @@ struct Order {
     let starts_at: String
     let stops_at: String
     let price_in_cents: Int
+}
+
+// MARK: - Order Response Model
+struct OrderResponse: Codable {
+    let data: OrderData
 }
