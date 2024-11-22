@@ -47,7 +47,8 @@ class BooqableAPI {
                 }
                 do {
                     let customerResponse = try JSONDecoder().decode(CustomerResponse.self, from: data)
-                    let customerDetail = CustomerDetail(name: customerResponse.data.attributes.name,
+                    let customerDetail = CustomerDetail(id: customerResponse.data.id,
+                                                        name: customerResponse.data.attributes.name,
                                                         email: customerResponse.data.attributes.email)
                     completion(.success(customerDetail))
                 } catch {
@@ -264,6 +265,52 @@ class BooqableAPI {
             completion(.failure(error))
         }
     }
+
+    // Assign Customer to an Order
+    func assignCustomerToOrder(orderId: String, customerId: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let orderData: [String: Any] = [
+            "fields": [
+                "orders": "customer_id,tax_region_id,price_in_cents,grand_total_with_tax_in_cents,to_be_paid_in_cents"
+            ],
+            "data": [
+                "id": orderId,
+                "type": "orders",
+                "attributes": [
+                    "customer_id": customerId
+                ]
+            ]
+        ]
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: orderData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/orders/\(orderId)", method: "PUT", body: jsonData)
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+
+                do {
+                    if let responseString = String(data: data, encoding: .utf8) {
+                    print("Raw Response: \(responseString)") // Add this line to debug
+                }
+                    let orderResponse = try JSONDecoder().decode(OrderResponse.self, from: data)
+                    print("Response Data: \(orderResponse)")
+                    let assignedCustomerId = orderResponse.data.attributes.customer_id
+                    completion(.success(assignedCustomerId))
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
 }
 
 // MARK: - Customer Models
@@ -283,6 +330,7 @@ struct CustomerResponse: Codable {
 }
 
 struct CustomerDetail: Codable {
+    let id: String
     let name: String
     let email: String
 }
@@ -323,6 +371,7 @@ struct OrderAttributes: Codable {
     let starts_at: String 
     let stops_at: String 
     let price_in_cents: Int
+    let customer_id: String 
 }
 
 struct OrderData: Codable {
