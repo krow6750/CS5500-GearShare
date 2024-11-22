@@ -133,6 +133,97 @@ class BooqableAPI {
             }
         }.resume()
     }
+
+    // Search Item by Name
+    func searchItemByName(name: String, completion: @escaping (Result<[Item], Error>) -> Void) {
+        let searchData: [String: Any] = [
+            "fields": [
+                "items": "id"
+            ],
+            "filter": [
+                "conditions": [
+                    "operator": "or",
+                    "attributes": [
+                        [
+                            "operator": "and",
+                            "attributes": [
+                                ["name": name]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: searchData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/items/search", method: "POST", body: jsonData)
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+                
+                do {
+                    let itemsResponse = try JSONDecoder().decode(ItemsResponse.self, from: data)
+                    
+                    if itemsResponse.data.isEmpty {
+                        completion(.failure(NSError(domain: "No Items Found", code: -1, userInfo: nil)))
+                        return
+                    }
+                    
+                    let items = itemsResponse.data.map { Item(id: $0.id, name: $0.attributes.name, base_price_in_cents: $0.attributes.base_price_in_cents) }
+                    completion(.success(items))
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+    // Fetch All Orders
+    func fetchAllOrders(completion: @escaping (Result<[Order], Error>) -> Void) {
+        let request = createRequest(path: "boomerang/orders", method: "GET")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let data = data else {
+                completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                return
+            }
+            
+            do {
+                let ordersResponse = try JSONDecoder().decode(OrdersResponse.self, from: data)
+                
+                if ordersResponse.data.isEmpty {
+                    completion(.failure(NSError(domain: "No Orders Found", code: -1, userInfo: nil)))
+                    return
+                }
+
+                let orders = ordersResponse.data.map { Order(
+                    id: $0.id,
+                    status: $0.attributes.status,
+                    starts_at: $0.attributes.starts_at,
+                    stops_at: $0.attributes.stops_at,
+                    price_in_cents: $0.attributes.price_in_cents
+                )}
+                
+                completion(.success(orders))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 
 // MARK: - Customer Models
@@ -184,4 +275,30 @@ struct Item {
     let id: String
     let name: String
     let base_price_in_cents: Int
+}
+
+// MARK: - Order Models
+struct OrderAttributes: Codable {
+    let status: String
+    let starts_at: String 
+    let stops_at: String 
+    let price_in_cents: Int
+}
+
+struct OrderData: Codable {
+    let id: String
+    let type: String
+    let attributes: OrderAttributes
+}
+
+struct OrdersResponse: Codable {
+    let data: [OrderData]
+}
+
+struct Order {
+    let id: String
+    let status: String
+    let starts_at: String
+    let stops_at: String
+    let price_in_cents: Int
 }
