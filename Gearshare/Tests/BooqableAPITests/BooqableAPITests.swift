@@ -17,28 +17,10 @@ final class BooqableAPITests: XCTestCase {
         super.tearDown()
     }
 
-    func testFetchAllItems() {
-        let expectation = self.expectation(description: "Fetch All Items")
-        print("Starting test: Fetch All Items")
-
-        api.fetchAllItems { result in
-            switch result {
-            case .success(let items):
-                XCTAssertFalse(items.isEmpty, "Items list should not be empty")
-                print("Fetched Items: \(items)")
-            case .failure(let error):
-                XCTFail("Failed to fetch items: \(error.localizedDescription)")
-                print("Error fetching items: \(error)")
-            }
-            expectation.fulfill()
-        }
-
-        waitForExpectations(timeout: 30, handler: nil)
-    }
-
-    func testFetchAllOrders() {
-        let expectation = self.expectation(description: "Fetch All Orders")
-        print("Starting test: Fetch All Orders")
+    // Test fetching all orders and products
+    func testFetchAllOrdersAndProducts() {
+        let expectation = self.expectation(description: "Fetch All Orders and Products")
+        print("Starting test: Fetch All Orders and Products")
 
         api.fetchAllOrders { result in
             switch result {
@@ -49,15 +31,82 @@ final class BooqableAPITests: XCTestCase {
                 XCTFail("Failed to fetch orders: \(error.localizedDescription)")
                 print("Error fetching orders: \(error)")
             }
-            expectation.fulfill()
+
+            self.api.fetchAllProducts { result in
+                switch result {
+                case .success(let products):
+                    XCTAssertFalse(products.isEmpty, "Products list should not be empty")
+                    print("Fetched Products: \(products)")
+                case .failure(let error):
+                    XCTFail("Failed to fetch products: \(error.localizedDescription)")
+                    print("Error fetching products: \(error)")
+                }
+                expectation.fulfill()
+            }
         }
 
-        waitForExpectations(timeout: 30, handler: nil)
+        waitForExpectations(timeout: 60, handler: nil)
     }
 
-    func testAddLineToOrder() {
-        let expectation = self.expectation(description: "Add Line to Order")
-        print("Starting test: Add Line to Order")
+    // Test creating a customer and assigning to an order
+    func testCreateCustomerAndAssignToOrder() {
+        let expectation = self.expectation(description: "Create Customer and Assign to Order")
+        print("Starting test: Create Customer and Assign to Order")
+
+        // Step 1: Create a customer
+        api.createCustomer(name: "Test Customer", email: "test@gmail.com") { result in
+            switch result {
+            case .success(let customer):
+                XCTAssertNotNil(customer, "Customer creation failed")
+                print("Created Customer: \(customer)")
+
+                // Step 2: Fetch an Order ID
+                self.api.fetchAllOrders { result in
+                    switch result {
+                    case .success(let orders):
+                        guard let order = orders.first else {
+                            XCTFail("No orders found")
+                            expectation.fulfill()
+                            return
+                        }
+
+                        let orderId = order.id
+                        print("Fetched Order ID: \(orderId)")
+
+                        // Step 3: Assign customer to order
+                        self.api.assignCustomerToOrder(orderId: orderId, customerId: customer.id) { result in
+                            switch result {
+                            case .success(let assignedCustomerId):
+                                XCTAssertEqual(assignedCustomerId, customer.id, "Customer ID should match the assigned customer")
+                                print("Successfully assigned customer to order: \(assignedCustomerId)")
+                            case .failure(let error):
+                                XCTFail("Failed to assign customer to order: \(error.localizedDescription)")
+                                print("Error assigning customer to order: \(error)")
+                            }
+                            expectation.fulfill()
+                        }
+
+                    case .failure(let error):
+                        XCTFail("Failed to fetch orders: \(error.localizedDescription)")
+                        print("Error fetching orders: \(error)")
+                        expectation.fulfill()
+                    }
+                }
+
+            case .failure(let error):
+                XCTFail("Failed to create customer: \(error.localizedDescription)")
+                print("Error creating customer: \(error)")
+                expectation.fulfill()
+            }
+        }
+
+        waitForExpectations(timeout: 60, handler: nil)
+    }
+
+    // Test adding a product to an order
+    func testAddProductToOrder() {
+        let expectation = self.expectation(description: "Add Product to Order")
+        print("Starting test: Add Product to Order")
 
         // Step 1: Fetch an Order ID
         api.fetchAllOrders { [weak self] result in
@@ -67,7 +116,6 @@ final class BooqableAPITests: XCTestCase {
             case .success(let orders):
                 guard let order = orders.first else {
                     XCTFail("No orders found")
-                    print("No orders available to test")
                     expectation.fulfill()
                     return
                 }
@@ -75,36 +123,44 @@ final class BooqableAPITests: XCTestCase {
                 let orderId = order.id
                 print("Fetched Order ID: \(orderId)")
 
-                // Step 2: Fetch an Item ID
-                self.api.fetchAllItems { result in
+                // Step 2: Fetch a Product ID
+                self.api.fetchAllProducts { result in
                     switch result {
-                    case .success(let items):
-                        guard let item = items.first else {
-                            XCTFail("No items found")
-                            print("No items available to test")
+                    case .success(let products):
+                        guard let product = products.first else {
+                            XCTFail("No products found")
                             expectation.fulfill()
                             return
                         }
 
-                        let itemId = item.id
-                        print("Fetched Item ID: \(itemId)")
+                        let productId = product.id
+                        print("Fetched Product ID: \(productId)")
 
-                        // Step 3: Add Line to Order
-                        self.api.addLineToOrder(orderId: orderId, itemId: itemId, quantity: 1) { result in
+                        // Step 3: Book the product to the order
+                        let actions: [[String: Any]] = [
+                            [
+                                "action": "book_product",
+                                "mode": "create_new",
+                                "product_id": productId,
+                                "quantity": 1
+                            ]
+                        ]
+
+                        self.api.bookItems(orderId: orderId, actions: actions) { result in
                             switch result {
-                            case .success(let lineId):
-                                XCTAssertNotNil(lineId, "Line ID should not be nil")
-                                print("Successfully added line to order: \(lineId)")
+                            case .success(let response):
+                                XCTAssertNotNil(response, "Booking product to order failed")
+                                print("Successfully added product to order: \(response)")
                             case .failure(let error):
-                                XCTFail("Failed to add line to order: \(error.localizedDescription)")
-                                print("Error adding line to order: \(error)")
+                                XCTFail("Failed to add product to order: \(error.localizedDescription)")
+                                print("Error adding product to order: \(error)")
                             }
                             expectation.fulfill()
                         }
 
                     case .failure(let error):
-                        XCTFail("Failed to fetch items: \(error.localizedDescription)")
-                        print("Error fetching items: \(error)")
+                        XCTFail("Failed to fetch products: \(error.localizedDescription)")
+                        print("Error fetching products: \(error)")
                         expectation.fulfill()
                     }
                 }
@@ -116,7 +172,6 @@ final class BooqableAPITests: XCTestCase {
             }
         }
 
-        waitForExpectations(timeout: 30, handler: nil)
+        waitForExpectations(timeout: 60, handler: nil)
     }
-
 }

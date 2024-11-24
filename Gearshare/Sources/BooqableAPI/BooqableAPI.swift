@@ -196,9 +196,95 @@ class BooqableAPI {
         }
     }
 
-    // Fetch All Orders
+    // Search Product by Name
+    func searchProductByName(name: String, completion: @escaping (Result<[String], Error>) -> Void) {
+        let searchData: [String: Any] = [
+            "fields": [
+                "products": "id"
+            ],
+            "filter": [
+                "conditions": [
+                    "operator": "or",
+                    "attributes": [
+                        [
+                            "operator": "and",
+                            "attributes": [
+                                ["name": ["match": name]]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: searchData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/products/search", method: "POST", body: jsonData)
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+                
+                do {
+                    let productsResponse = try JSONDecoder().decode(CustomerSearchResponse.self, from: data)
+                    let productIds = productsResponse.data.map { $0.id }
+                    completion(.success(productIds))
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+
+    // Fetch All Products
+    func fetchAllProducts(completion: @escaping (Result<[Product], Error>) -> Void) {
+        let request = createRequest(path: "boomerang/products", method: "GET")
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let data = data else {
+                completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                return
+            }
+            
+            do {
+                let productsResponse = try JSONDecoder().decode(ProductsResponse.self, from: data)
+                
+                if productsResponse.data.isEmpty {
+                    completion(.failure(NSError(domain: "No Products Found", code: -1, userInfo: nil)))
+                    return
+                }
+                
+                let products = productsResponse.data.map { productData in
+                    Product(
+                        id: productData.id,
+                        name: productData.attributes.name,
+                        groupName: productData.attributes.group_name,
+                        basePriceInCents: productData.attributes.base_price_in_cents,
+                        showInStore: productData.attributes.show_in_store
+                    )
+                }
+                completion(.success(products))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    // fetch all orders
     func fetchAllOrders(completion: @escaping (Result<[Order], Error>) -> Void) {
-        let request = createRequest(path: "boomerang/orders", method: "GET")
+        let request = createRequest(path: "boomerang/orders?", method: "GET")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -218,13 +304,22 @@ class BooqableAPI {
                     return
                 }
 
-                let orders = ordersResponse.data.map { Order(
-                    id: $0.id,
-                    status: $0.attributes.status,
-                    starts_at: $0.attributes.starts_at,
-                    stops_at: $0.attributes.stops_at,
-                    price_in_cents: $0.attributes.price_in_cents
-                )}
+                let orders = ordersResponse.data.map { orderData -> Order in
+                    let items = orderData.relationships?.items?.data.map { itemData in
+                        Item(id: itemData.id, name: "", base_price_in_cents: 0) 
+                    } ?? []
+                    
+                    return Order(
+                        id: orderData.id,
+                        status: orderData.attributes.status,
+                        starts_at: orderData.attributes.starts_at,
+                        stops_at: orderData.attributes.stops_at,
+                        price_in_cents: orderData.attributes.price_in_cents,
+                        items: items,
+                        customer_id: orderData.attributes.customer_id
+
+                    )
+                }
                 
                 completion(.success(orders))
             } catch {
@@ -232,6 +327,8 @@ class BooqableAPI {
             }
         }.resume()
     }
+
+
 
     // Create Order 
     func createOrder(startsAt: String, stopsAt: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -273,6 +370,8 @@ class BooqableAPI {
         }
     }
 
+
+    // assign the customer to order
     func assignCustomerToOrder(orderId: String, customerId: String, completion: @escaping (Result<String, Error>) -> Void) {
         let orderData: [String: Any] = [
             "data": [
@@ -349,22 +448,22 @@ class BooqableAPI {
         }
     }
 
-    func addLineToOrder(orderId: String, itemId: String, quantity: Int, completion: @escaping (Result<String, Error>) -> Void) {
-        // Prepare the payload for the request
-        let lineData: [String: Any] = [
+    // Book items for an order
+    func bookItems(orderId: String, actions: [[String: Any]], completion: @escaping (Result<String, Error>) -> Void) {
+        let bookData: [String: Any] = [
             "data": [
-                "type": "lines",
+                "type": "order_fulfillments",
                 "attributes": [
                     "order_id": orderId,
-                    "item_id": itemId,
-                    "quantity": quantity
+                    "confirm_shortage": nil,
+                    "actions": actions
                 ]
             ]
         ]
-
+        
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: lineData, options: .prettyPrinted)
-            let request = createRequest(path: "boomerang/lines", method: "POST", body: jsonData)
+            let jsonData = try JSONSerialization.data(withJSONObject: bookData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/order_fulfillments", method: "POST", body: jsonData)
             
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -375,12 +474,19 @@ class BooqableAPI {
                     completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
                     return
                 }
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("Response: \(responseString)")
-                }
+                print("Book Items Response: \(String(data: data, encoding: .utf8) ?? "No response body")")
                 do {
-                    let lineResponse = try JSONDecoder().decode(LineResponse.self, from: data)
-                    completion(.success(lineResponse.data.id))
+                    let responseDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+                    if let error = responseDict?["error"] as? [String: Any], let message = error["message"] as? String {
+                        completion(.failure(NSError(domain: "Booqable Error", code: -1, userInfo: [NSLocalizedDescriptionKey: message])))
+                        return
+                    }
+                    if let data = responseDict?["data"] as? [String: Any],
+                    let orderId = data["id"] as? String {
+                        completion(.success("Items booked successfully for order \(orderId)"))
+                    } else {
+                        completion(.failure(NSError(domain: "Invalid Response", code: -1, userInfo: nil)))
+                    }
                 } catch {
                     completion(.failure(error))
                 }
@@ -389,7 +495,6 @@ class BooqableAPI {
             completion(.failure(error))
         }
     }
-
 
 }
 
@@ -406,9 +511,33 @@ struct CustomerData: Codable {
     let relationships: OrderRelationships?
 }
 
+struct CustomerResponse: Codable {
+    let data: CustomerData
+}
+
+struct CustomerDetail: Codable {
+    let id: String
+    let name: String
+    let email: String
+}
+
+struct CustomerSearchData: Codable {
+    let id: String
+}
+
+struct CustomerSearchResponse: Codable {
+    let data: [CustomerSearchData]
+}
+
+// MARK: - Relationship Models
 struct OrderRelationships: Codable {
     let items: RelationshipData<ItemRelationship>?
-    let lines: RelationshipData<LineRelationship>?
+    let lines: RelationshipData<LineData>?
+    // let lines: [LineData]?
+    enum CodingKeys: String, CodingKey {
+        case items
+        case lines
+    }
 }
 
 struct RelationshipData<T: Codable>: Codable {
@@ -436,22 +565,11 @@ struct LineResponse: Codable {
     let data: LineData
 }
 
-struct CustomerResponse: Codable {
-    let data: CustomerData
-}
-
-struct CustomerDetail: Codable {
+struct Line: Codable {
     let id: String
-    let name: String
-    let email: String
-}
-
-struct CustomerSearchData: Codable {
-    let id: String
-}
-
-struct CustomerSearchResponse: Codable {
-    let data: [CustomerSearchData]
+    let order_id: String
+    let item_id: String
+    let quantity: Int
 }
 
 // MARK: - Item Models
@@ -502,10 +620,37 @@ struct Order {
     let starts_at: String
     let stops_at: String
     let price_in_cents: Int
-    let lines: [Line]?
+    let items: [Item]
+    let customer_id: String?
 }
 
 // MARK: - Order Response Model
 struct OrderResponse: Codable {
     let data: OrderData
+}
+
+// MARK: - Product Models
+struct ProductAttributes: Codable {
+    let name: String
+    let group_name: String
+    let base_price_in_cents: Int
+    let show_in_store: Bool
+}
+
+struct ProductData: Codable {
+    let id: String
+    let type: String
+    let attributes: ProductAttributes
+}
+
+struct ProductsResponse: Codable {
+    let data: [ProductData]
+}
+
+struct Product {
+    let id: String
+    let name: String
+    let groupName: String
+    let basePriceInCents: Int
+    let showInStore: Bool
 }
