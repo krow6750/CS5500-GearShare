@@ -1,3 +1,10 @@
+//
+//  BooqableAPI.swift
+//  Gearshare
+//
+//  Created by Yixiao Wu on 11/22/24.
+//
+
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -266,12 +273,8 @@ class BooqableAPI {
         }
     }
 
-    // Assign Customer to an Order
     func assignCustomerToOrder(orderId: String, customerId: String, completion: @escaping (Result<String, Error>) -> Void) {
         let orderData: [String: Any] = [
-            "fields": [
-                "orders": "customer_id,tax_region_id,price_in_cents,grand_total_with_tax_in_cents,to_be_paid_in_cents"
-            ],
             "data": [
                 "id": orderId,
                 "type": "orders",
@@ -284,7 +287,6 @@ class BooqableAPI {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: orderData, options: .prettyPrinted)
             let request = createRequest(path: "boomerang/orders/\(orderId)", method: "PUT", body: jsonData)
-
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     completion(.failure(error))
@@ -294,11 +296,9 @@ class BooqableAPI {
                     completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
                     return
                 }
-
                 do {
                     let orderResponse = try JSONDecoder().decode(OrderResponse.self, from: data)
-                    print("Response Data: \(orderResponse)")
-                    let assignedCustomerId = orderResponse.data.attributes.customer_id
+                    let assignedCustomerId = orderResponse.data.attributes.customer_id ?? "Unknown"
                     completion(.success(assignedCustomerId))
                 } catch {
                     completion(.failure(error))
@@ -308,6 +308,7 @@ class BooqableAPI {
             completion(.failure(error))
         }
     }
+
 
     // Update stops_at for an order
     func updateStopsAt(orderId: String, stopsAt: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -347,6 +348,49 @@ class BooqableAPI {
             completion(.failure(error))
         }
     }
+
+    func addLineToOrder(orderId: String, itemId: String, quantity: Int, completion: @escaping (Result<String, Error>) -> Void) {
+        // Prepare the payload for the request
+        let lineData: [String: Any] = [
+            "data": [
+                "type": "lines",
+                "attributes": [
+                    "order_id": orderId,
+                    "item_id": itemId,
+                    "quantity": quantity
+                ]
+            ]
+        ]
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: lineData, options: .prettyPrinted)
+            let request = createRequest(path: "boomerang/lines", method: "POST", body: jsonData)
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data = data else {
+                    completion(.failure(NSError(domain: "No Data", code: -1, userInfo: nil)))
+                    return
+                }
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Response: \(responseString)")
+                }
+                do {
+                    let lineResponse = try JSONDecoder().decode(LineResponse.self, from: data)
+                    completion(.success(lineResponse.data.id))
+                } catch {
+                    completion(.failure(error))
+                }
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+
 }
 
 // MARK: - Customer Models
@@ -359,6 +403,37 @@ struct CustomerData: Codable {
     let id: String
     let type: String
     let attributes: CustomerAttributes
+    let relationships: OrderRelationships?
+}
+
+struct OrderRelationships: Codable {
+    let items: RelationshipData<ItemRelationship>?
+    let lines: RelationshipData<LineRelationship>?
+}
+
+struct RelationshipData<T: Codable>: Codable {
+    let data: [T]
+}
+
+struct ItemRelationship: Codable {
+    let id: String
+    let type: String
+}
+
+struct LineAttributes: Codable {
+    let order_id: String
+    let item_id: String
+    let quantity: Int
+}
+
+struct LineData: Codable {
+    let id: String
+    let type: String
+    let attributes: LineAttributes
+}
+
+struct LineResponse: Codable {
+    let data: LineData
 }
 
 struct CustomerResponse: Codable {
@@ -407,13 +482,14 @@ struct OrderAttributes: Codable {
     let starts_at: String
     let stops_at: String
     let price_in_cents: Int
-    let customer_id: String
+    let customer_id: String?
 }
 
 struct OrderData: Codable {
     let id: String
     let type: String
     let attributes: OrderAttributes
+    let relationships: OrderRelationships?
 }
 
 struct OrdersResponse: Codable {
@@ -426,6 +502,7 @@ struct Order {
     let starts_at: String
     let stops_at: String
     let price_in_cents: Int
+    let lines: [Line]?
 }
 
 // MARK: - Order Response Model
