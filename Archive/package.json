@@ -1,0 +1,50 @@
+{
+  "name": "gear-share",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "setup-airtable": "node -r dotenv/config src/scripts/setupAirtable.js",
+    "test-sync": "node src/tests/testAirtableSync.js",
+    "test-final": "node src/tests/finalAirtableTest.js",
+    "test:repair-modal": "jest src/components/repairs/AddRepairModal.integration.test.js --watch",
+    "test:repair-modal:ci": "jest src/components/repairs/AddRepairModal.integration.test.js",
+    "test:repair-modal:coverage": "jest src/components/repairs/AddRepairModal.integration.test.js --coverage"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.1.5",
+    "@sendgrid/mail": "^8.1.4",
+    "@tanstack/react-query": "^5.59.20",
+    "airtable": "^0.12.2",
+    "axios": "^1.7.7",
+    "chart.js": "^4.4.6",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "googleapis": "^144.0.0",
+    "handlebars": "^4.7.8",
+    "next": "^15.0.3",
+    "nodemailer": "^6.9.16",
+    "open": "^10.1.0",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.53.2",
+    "resend": "^4.0.1-alpha.0",
+    "tailwind-merge": "^2.5.4",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.14"
+  },
+  "type": "module"
+}
