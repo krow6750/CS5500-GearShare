@@ -317,15 +317,12 @@ export default function EditRepairModal({ isOpen, onClose, repair, onSuccess, se
         }
       }
 
-      // Log activity
-      await activityService.logActivity({
-        action_type: 'update',
-        description: `Updated repair ticket #${repair['Repair ID']}`,
-        details: {
-          repair_ticket_id: repair['Repair ID'],
-          changes: updateData
-        }
-      });
+      // Replace the old logActivity with createActivityLog
+      await activityService.createActivityLog(
+        'update',
+        `Updated repair ticket #${formData['Repair ID']}`,
+        'repairs'
+      );
 
       if (onSuccess) {
         onSuccess();
@@ -374,7 +371,7 @@ export default function EditRepairModal({ isOpen, onClose, repair, onSuccess, se
                   )}
 
                   <div className="mb-6">
-                    <label className={labelStyles}>Completed Repair Email Template</label>
+                    <label className={labelStyles}>Completed Repair Email Templates</label>
                     <select
                       className={inputStyles}
                       value={selectedTemplate}

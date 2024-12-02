@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import booqableService from '@/lib/booqable/booqableService';
-import AddEquipmentModal from '@/components/equipment/AddEquipmentModal';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useSidebar } from '../../../contexts/SidebarContext';
 
@@ -12,7 +11,6 @@ const ITEMS_PER_PAGE = 15;
 export default function EquipmentPage() {
   const { isExpanded } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   
   const queryClient = useQueryClient();
@@ -38,10 +36,6 @@ export default function EquipmentPage() {
 
   if (!isMounted) return null;
   if (isLoading) return <LoadingSpinner />;
-
-  const handleAddSuccess = () => {
-    queryClient.invalidateQueries(['equipment']);
-  };
 
   const statusColors = {
     'in_stock': 'bg-emerald-100 text-emerald-800',
@@ -69,13 +63,6 @@ export default function EquipmentPage() {
               Manage your equipment inventory
             </p>
           </div>
-          
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition-colors"
-          >
-            Add Equipment
-          </button>
         </div>
       </div>
 
@@ -151,12 +138,6 @@ export default function EquipmentPage() {
           </button>
         </div>
       </div>
-
-      <AddEquipmentModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleAddSuccess}
-      />
     </div>
   );
 }

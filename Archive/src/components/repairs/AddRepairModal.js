@@ -1,5 +1,5 @@
 'use client';
-
+import { activityService } from '@/lib/activity/activityService';
 import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -63,6 +63,14 @@ const ITEM_TYPES = [
   'Other'
 ];
 
+const INITIAL_STATUSES = [
+  'Awaiting Drop-Off',
+  'Can\'t Repair',
+  'Contacted, Awaiting Customer Response',
+  'Dropped Off, Awaiting Repair',
+  'In Repair'
+];
+
 export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemplate, completedTemplate }) {
   const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState({
@@ -95,7 +103,7 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate);
 
   const { data: templates } = useQuery({
     queryKey: ['emailTemplates'],
@@ -126,9 +134,7 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
   }, [isMounted]);
 
   useEffect(() => {
-    if (defaultTemplate) {
-      setSelectedTemplate(defaultTemplate);
-    }
+    setSelectedTemplate(defaultTemplate);
   }, [defaultTemplate]);
 
   if (!isMounted) return null;
@@ -161,11 +167,22 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
       let airtableRecord = await airtableService.createRepairTicket(processedFormData);
       console.log('Airtable record created:', airtableRecord);
 
-      // Send email if template is selected
-      if (completedTemplate && data['Email']) {
+      // Add logging for email conditions
+      console.log('Email sending conditions:', {
+        hasTemplate: !!selectedTemplate,
+        hasEmail: !!data['Email'],
+        statusMatch: INITIAL_STATUSES.includes(data['Status']),
+        status: data['Status']
+      });
+
+      // Send email if template is selected and status matches initial statuses
+      if (selectedTemplate && 
+          data['Email'] && 
+          INITIAL_STATUSES.includes(data['Status'])) {
+        console.log('Attempting to send email with template:', selectedTemplate);
         try {
           await emailServices.sendEmail({
-            templateName: completedTemplate,
+            templateName: selectedTemplate,
             recipients: data['Email'],
             firstName: data['First Name'] || '',
             lastName: data['Last Name'] || '',
@@ -176,10 +193,13 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
             status: data['Status'] || '',
             notes: data['Internal Notes'] || ''
           });
+          console.log('Email sent successfully');
         } catch (emailError) {
           console.error('Failed to send email:', emailError);
           // Don't throw error here to allow ticket creation to succeed
         }
+      } else {
+        console.log('Skipping email send - conditions not met');
       }
 
       // Reset form data to initial state
@@ -230,10 +250,26 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="mx-auto max-w-3xl w-full rounded-lg bg-white shadow-lg">
           <div className="p-6 flex flex-col h-[90vh]">
-            <Dialog.Title className="text-xl font-semibold text-slate-900 mb-6 flex-shrink-0">
+            <Dialog.Title className="text-xl font-semibold text-slate-900 mb-2 flex-shrink-0">
               Create Repair Ticket
             </Dialog.Title>
-            
+
+            <div className="mb-6">
+              <label className={labelStyles}>Create Repair Email Template</label>
+              <select
+                className={inputStyles}
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+              >
+                <option value="">Select template...</option>
+                {templates?.map(template => (
+                  <option key={template.id} value={template.templateName}>
+                    {template.templateName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {loading ? (
               <LoadingSpinner />
             ) : (

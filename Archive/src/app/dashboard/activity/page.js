@@ -27,8 +27,8 @@ export default function ActivityPage() {
   }, []);
 
   const { data: activities, isLoading } = useQuery({
-    queryKey: ['activities', filters],
-    queryFn: () => activityService.getActivities(filters)
+    queryKey: ['activities'],
+    queryFn: activityService.fetchAllActivityLogs
   });
 
   const actionTypes = [
@@ -66,12 +66,43 @@ export default function ActivityPage() {
   ];
 
   const filteredActivities = activities?.filter(activity => {
+    if (!activity) return false;
+    
     const searchLower = searchTerm.toLowerCase();
-    return (
-      activity.description.toLowerCase().includes(searchLower) ||
-      activity.user_id.toString().includes(searchLower) ||
-      activity.action_type.toLowerCase().includes(searchLower)
-    );
+    const matchesSearch = 
+      (activity.description?.toLowerCase().includes(searchLower) || '') ||
+      (activity.action_type?.toLowerCase().includes(searchLower) || '') ||
+      (activity.collection?.toLowerCase().includes(searchLower) || '');
+
+    const matchesActionType = !filters.action_type || 
+      activity.action_type?.toLowerCase() === filters.action_type.toLowerCase();
+
+    const matchesCollection = !filters.collection || 
+      activity.collection?.toLowerCase() === filters.collection.toLowerCase();
+
+    // Date range filtering
+    let matchesDateRange = true;
+    if (filters.dateRange !== 'all' && activity.activity_time) {
+      const activityDate = new Date(activity.activity_time);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      switch (filters.dateRange) {
+        case 'today':
+          matchesDateRange = activityDate >= today;
+          break;
+        case 'week':
+          const weekAgo = new Date(now.setDate(now.getDate() - 7));
+          matchesDateRange = activityDate >= weekAgo;
+          break;
+        case 'month':
+          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+          matchesDateRange = activityDate >= monthAgo;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesActionType && matchesCollection && matchesDateRange;
   });
 
   const totalPages = Math.ceil((filteredActivities?.length || 0) / ITEMS_PER_PAGE);
@@ -223,8 +254,11 @@ export default function ActivityPage() {
               <tbody className="bg-white divide-y divide-slate-200">
                 {paginatedActivities?.map((activity) => (
                   <tr key={activity.log_id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {activity.log_id}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {isMounted ? new Date(activity.activity_time).toLocaleString('en-US', {
+                      {activity.activity_time ? new Date(activity.activity_time).toLocaleString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
@@ -232,18 +266,18 @@ export default function ActivityPage() {
                         minute: '2-digit'
                       }) : ''}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {activity.user_id}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1.5 inline-flex text-sm font-semibold rounded-full
-                        ${actionColors[activity.action_type] || 'bg-slate-100 text-slate-800'}
+                        ${actionColors[activity.action_type?.toLowerCase()] || 'bg-slate-100 text-slate-800'}
                       `}>
-                        {activity.action_type.toUpperCase()}
+                        {activity.action_type?.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                    <td className="px-6 py-4 text-sm text-slate-800">
                       {activity.description}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {activity.collection}
                     </td>
                   </tr>
                 ))}

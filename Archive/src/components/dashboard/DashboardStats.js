@@ -263,30 +263,14 @@ export default function DashboardStats() {
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">Weekly Sales</h3>
-            <div className="h-64">
-              <Line 
-                data={revenueData} 
-                options={{ 
-                  maintainAspectRatio: false,
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        label: (context) => `$${context.parsed.y.toLocaleString()}`
-                      }
-                    }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (value) => `$${value.toLocaleString()}`
-                      }
-                    }
-                  }
-                }} 
-              />
-            </div>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Weekly Sales</h3>
+            <p className="text-2xl font-bold text-slate-900">
+              ${Object.values(weeklyRevenue).reduce((sum, amount) => sum + amount, 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Last 7 days combined</p>
           </div>
         </div>
       )}

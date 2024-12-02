@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import booqableService from '@/lib/booqable/booqableService';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import AddRentalModal from '@/components/rentals/AddRentalModal';
 import { formatDate } from '@/lib/utils/dateFormat';
 import { useSidebar } from '../../../contexts/SidebarContext';
 
@@ -13,12 +12,11 @@ const ITEMS_PER_PAGE = 15;
 export default function RentalsPage() {
   const { isExpanded } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerFilter, setCustomerFilter] = useState('');
-
-  const queryClient = useQueryClient();
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [searchField, setSearchField] = useState('all');
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,22 +47,63 @@ export default function RentalsPage() {
     'DEFAULT': 'bg-slate-100 text-slate-800'
   };
 
-  // Filter rentals based on selected customer
+  // Define the searchable fields
+  const searchFields = [
+    { value: 'all', label: 'All Fields' },
+    { value: 'number', label: 'Order #' },
+    { value: 'customer', label: 'Customer' },
+    { value: 'status', label: 'Status' },
+    { value: 'dates', label: 'Dates' },
+    { value: 'price', label: 'Price' }
+  ];
+
+  // Update the filtering logic
   const filteredRentals = rentals?.filter(rental => {
-    if (!selectedCustomer) return true;
-    return rental.customer_id === selectedCustomer.id;
+    const customer = customers?.find(c => c.id === rental.customer_id);
+    
+    if (!searchValue) return true;
+
+    const searchLower = searchValue.toLowerCase();
+    
+    switch (searchField) {
+      case 'number':
+        return String(rental.number || '').toLowerCase().includes(searchLower);
+      case 'customer':
+        return (
+          customer?.name?.toLowerCase().includes(searchLower) ||
+          customer?.email?.toLowerCase().includes(searchLower)
+        );
+      case 'status':
+        return String(rental.status || '').toLowerCase().includes(searchLower);
+      case 'dates':
+        return (
+          String(formatDate(rental.starts_at) || '').toLowerCase().includes(searchLower) ||
+          String(formatDate(rental.stops_at) || '').toLowerCase().includes(searchLower)
+        );
+      case 'price':
+        const price = ((rental.price_in_cents || 0) / 100).toFixed(2);
+        return price.includes(searchValue);
+      case 'all':
+        return [
+          rental.number,
+          customer?.name,
+          customer?.email,
+          rental.status,
+          formatDate(rental.starts_at),
+          formatDate(rental.stops_at),
+          ((rental.price_in_cents || 0) / 100).toFixed(2)
+        ].some(field => 
+          String(field || '').toLowerCase().includes(searchLower)
+        );
+      default:
+        return true;
+    }
   });
 
   const totalPages = Math.ceil((filteredRentals?.length || 0) / ITEMS_PER_PAGE);
   const paginatedRentals = filteredRentals?.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
-  );
-
-  // Filter customers based on search input
-  const filteredCustomers = customers?.filter(customer => 
-    customer.name.toLowerCase().includes(customerFilter.toLowerCase()) ||
-    customer.email.toLowerCase().includes(customerFilter.toLowerCase())
   );
 
   if (!isMounted) return null;
@@ -87,52 +126,27 @@ export default function RentalsPage() {
           </div>
           
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-            {/* Customer Filter */}
-            <div className="relative">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700 whitespace-nowrap">Search by:</span>
+              <select
+                value={searchField}
+                onChange={(e) => setSearchField(e.target.value)}
+                className="px-3 py-2 border rounded-md text-slate-900 bg-white"
+              >
+                {searchFields.map(field => (
+                  <option key={field.value} value={field.value}>
+                    {field.label}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
-                placeholder="Search customers..."
-                value={customerFilter}
-                onChange={(e) => setCustomerFilter(e.target.value)}
-                className="px-4 py-2 border rounded-md w-64"
+                placeholder={`Search ${searchField === 'all' ? 'all fields' : searchFields.find(f => f.value === searchField)?.label.toLowerCase()}...`}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="px-4 py-2 border rounded-md w-64 text-slate-900 placeholder:text-slate-400"
               />
-              {customerFilter && filteredCustomers && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {filteredCustomers.map(customer => (
-                    <div
-                      key={customer.id}
-                      onClick={() => {
-                        setSelectedCustomer(customer);
-                        setCustomerFilter('');
-                      }}
-                      className="px-4 py-2 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-slate-500">{customer.email}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-
-            {selectedCustomer && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-md">
-                <span>{selectedCustomer.name}</span>
-                <button
-                  onClick={() => setSelectedCustomer(null)}
-                  className="text-slate-500 hover:text-slate-700"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition-colors"
-            >
-              Add New Rental
-            </button>
           </div>
         </div>
       </div>
@@ -145,7 +159,6 @@ export default function RentalsPage() {
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Equipment</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">Start</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-600">End</th>
@@ -162,11 +175,6 @@ export default function RentalsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900">
                       {customer?.name || 'Unknown'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-900">
-                      {rental.lines?.length > 0 
-                        ? rental.lines.map(line => line.group_name || line.product_name).join(', ')
-                        : 'N/A'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`
@@ -233,16 +241,6 @@ export default function RentalsPage() {
           </button>
         </div>
       </div>
-
-      <AddRentalModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries(['rentals']);
-          setIsAddModalOpen(false);
-        }}
-        customers={customers}
-      />
     </div>
   );
 }

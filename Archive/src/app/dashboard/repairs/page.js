@@ -50,6 +50,8 @@ export default function RepairsPage() {
   const [emailTemplates, setEmailTemplates] = useState([]);
   const [selectedCreateTemplate, setSelectedCreateTemplate] = useState('');
   const [selectedCompletedTemplate, setSelectedCompletedTemplate] = useState('');
+  const [searchField, setSearchField] = useState('all');
+  const [searchValue, setSearchValue] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -99,8 +101,69 @@ export default function RepairsPage() {
     }
   });
 
-  const totalPages = Math.ceil((repairs?.length || 0) / ITEMS_PER_PAGE);
-  const paginatedRepairs = repairs?.slice(
+  console.log('=== REPAIR FIELDS ===', repairs?.[0]?.fields);
+
+  const filteredRepairs = repairs?.filter(repair => {
+    if (!searchValue) return true;
+
+    const searchLower = searchValue.toLowerCase();
+    
+    if (searchField === 'itemType') {
+      console.log('Searching type:', {
+        itemType: repair.fields['Item Type'],
+        typeOfItem: repair.fields['Type of Item'],
+        searchValue: searchLower
+      });
+    }
+    
+    switch (searchField) {
+      case 'repairId':
+        return String(repair.fields['Repair ID'] || '').toLowerCase().includes(searchLower);
+      case 'name':
+        return (
+          String(repair.fields['First Name'] || '').toLowerCase().includes(searchLower) ||
+          String(repair.fields['Last Name'] || '').toLowerCase().includes(searchLower)
+        );
+      case 'email':
+        return String(repair.fields['Email'] || '').toLowerCase().includes(searchLower);
+      case 'status':
+        return String(repair.fields['Status'] || '').toLowerCase().includes(searchLower);
+      case 'itemType':
+        const matchesItemType = String(repair.fields['Item Type'] || '').toLowerCase().includes(searchLower);
+        const matchesTypeOfItem = String(repair.fields['Type of Item'] || '').toLowerCase().includes(searchLower);
+        console.log('Type matches:', { matchesItemType, matchesTypeOfItem });
+        return matchesItemType || matchesTypeOfItem;
+      case 'brand':
+        return String(repair.fields['Brand'] || '').toLowerCase().includes(searchLower);
+      case 'damage':
+        return String(repair.fields['Damage or Defect'] || '').toLowerCase().includes(searchLower);
+      case 'payment':
+        return String(repair.fields['Payment type'] || '').toLowerCase().includes(searchLower);
+      case 'referral':
+        return String(repair.fields['Referred By'] || '').toLowerCase().includes(searchLower);
+      case 'all':
+        return [
+          repair.fields['Repair ID'],
+          repair.fields['First Name'],
+          repair.fields['Last Name'],
+          repair.fields['Email'],
+          repair.fields['Status'],
+          repair.fields['Item Type'],
+          repair.fields['Type of Item'],
+          repair.fields['Brand'],
+          repair.fields['Damage or Defect'],
+          repair.fields['Payment type'],
+          repair.fields['Referred By']
+        ].some(field => 
+          String(field || '').toLowerCase().includes(searchLower)
+        );
+      default:
+        return true;
+    }
+  });
+
+  const totalPages = Math.ceil((filteredRepairs?.length || 0) / ITEMS_PER_PAGE);
+  const paginatedRepairs = filteredRepairs?.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -114,52 +177,31 @@ export default function RepairsPage() {
     template => template.templateType === "Completed Repair Email Template"
   ).sort((a, b) => a.templateName.localeCompare(b.templateName));
 
+  const searchFields = [
+    { value: 'all', label: 'All Fields' },
+    { value: 'repairId', label: 'Repair ID' },
+    { value: 'name', label: 'Name' },
+    { value: 'email', label: 'Email' },
+    { value: 'status', label: 'Status' },
+    { value: 'itemType', label: 'Item Type' },
+    { value: 'brand', label: 'Brand' },
+    { value: 'damage', label: 'Damage' },
+    { value: 'payment', label: 'Payment Type' },
+    { value: 'referral', label: 'Referred By' }
+  ];
+
   if (!isMounted) return null;
   if (isLoading) return <LoadingSpinner />;
   return (
     <div className="container mx-auto max-w-[1400px]">
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 whitespace-nowrap">Repair Tickets</h1>
-            <p className="text-sm text-slate-600 mt-1 whitespace-nowrap">
-              Manage equipment repair tickets
-            </p>
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-700 whitespace-nowrap">Created Email Templates:</span>
-                <select 
-                  className="border border-slate-200 rounded-md px-3 py-2 text-slate-600 w-[220px]"
-                  value={selectedCreateTemplate}
-                  onChange={(e) => setSelectedCreateTemplate(e.target.value)}
-                >
-                  <option value="">Select Template Type...</option>
-                  {createRepairTemplates?.map(template => (
-                    <option key={template.id} value={template.templateName}>
-                      {template.templateName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-slate-700 whitespace-nowrap">Completed Templates:</span>
-                <select 
-                  className="border border-slate-200 rounded-md px-3 py-2 text-slate-600 w-[220px]"
-                  value={selectedCompletedTemplate}
-                  onChange={(e) => setSelectedCompletedTemplate(e.target.value)}
-                >
-                  <option value="">Select Template Type...</option>
-                  {completedRepairTemplates?.map(template => (
-                    <option key={template.id} value={template.templateName}>
-                      {template.templateName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 whitespace-nowrap">Repair Tickets</h1>
+              <p className="text-sm text-slate-600 mt-1 whitespace-nowrap">
+                Manage equipment repair tickets
+              </p>
             </div>
 
             <button
@@ -168,6 +210,62 @@ export default function RepairsPage() {
             >
               Create Repair Ticket
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700 whitespace-nowrap">Search by:</span>
+              <select
+                value={searchField}
+                onChange={(e) => setSearchField(e.target.value)}
+                className="border border-slate-200 rounded-md px-3 py-2 text-slate-900 w-[150px]"
+              >
+                {searchFields.map(field => (
+                  <option key={field.value} value={field.value}>
+                    {field.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder={`Search ${searchField === 'all' ? 'all fields' : searchFields.find(f => f.value === searchField)?.label.toLowerCase()}...`}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="border border-slate-200 rounded-md px-3 py-2 text-slate-900 w-[220px] placeholder:text-slate-400"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700 whitespace-nowrap">Created Email:</span>
+              <select 
+                className="border border-slate-200 rounded-md px-3 py-2 text-slate-600 w-[220px]"
+                value={selectedCreateTemplate}
+                onChange={(e) => setSelectedCreateTemplate(e.target.value)}
+              >
+                <option value="">Select Template...</option>
+                {createRepairTemplates?.map(template => (
+                  <option key={template.id} value={template.templateName}>
+                    {template.templateName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700 whitespace-nowrap">Completed:</span>
+              <select 
+                className="border border-slate-200 rounded-md px-3 py-2 text-slate-600 w-[220px]"
+                value={selectedCompletedTemplate}
+                onChange={(e) => setSelectedCompletedTemplate(e.target.value)}
+              >
+                <option value="">Select Template...</option>
+                {completedRepairTemplates?.map(template => (
+                  <option key={template.id} value={template.templateName}>
+                    {template.templateName}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -317,7 +415,7 @@ export default function RepairsPage() {
       <div className="mt-4 bg-white rounded-lg border border-slate-200 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-slate-600">
-            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, repairs?.length || 0)} of {repairs?.length || 0}
+            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredRepairs?.length || 0)} of {filteredRepairs?.length || 0}
           </div>
           
           <div className="flex gap-2">
