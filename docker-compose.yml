@@ -41,7 +41,10 @@ services:
       - NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID=${NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID}
       - WATCHPACK_POLLING=true
     volumes:
-      - app_data:/app
+      - ./:/app:delegated
+      - /app/node_modules
+      - /app/.next
+      - "F:\\Downloads\\presentationVersion:/app/presentationVersion"
     command: npm run dev:watch
     stdin_open: true
     tty: true

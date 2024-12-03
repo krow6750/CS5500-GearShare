@@ -120,8 +120,7 @@ export default function EmailTemplatesPage() {
     { var: '{{repairId}}', desc: 'Repair ticket ID' },
     { var: '{{itemType}}', desc: 'Type of item' },
     { var: '{{paymentType}}', desc: 'Payment method' },
-    { var: '{{status}}', desc: 'Repair status' },
-    { var: '{{notes}}', desc: 'Additional notes' }
+    { var: '{{status}}', desc: 'Repair status' }
   ];
 
   const insertVariableInEdit = (variable) => {
@@ -178,15 +177,32 @@ export default function EmailTemplatesPage() {
                 <h2 className="text-lg font-semibold text-slate-900">{template.templateName}</h2>
                 <p className="text-sm text-slate-600 mt-1">Subject: {template.templateSubject}</p>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedTemplate(template.id);
-                  setEditedTemplate(template);
-                }}
-                className="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition-colors"
-              >
-                Edit Template
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedTemplate(template.id);
+                    setEditedTemplate(template);
+                  }}
+                  className="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition-colors"
+                >
+                  Edit Template
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to delete this template?')) {
+                      try {
+                        await emailTemplateService.deleteEmailTemplate(template.templateName);
+                        await loadTemplates();
+                      } catch (error) {
+                        console.error('Failed to delete template:', error);
+                      }
+                    }
+                  }}
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
             <div className="bg-slate-50 p-4 rounded-md mb-2">
               <pre className="text-sm text-slate-600 whitespace-pre-wrap">

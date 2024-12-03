@@ -204,6 +204,15 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
       let airtableRecord = await airtableService.createRepairTicket(processedFormData);
       console.log('Airtable record created:', airtableRecord);
 
+      await activityService.logRepairActivity('create', {
+        fields: processedFormData,
+        customer: {
+          name: `${processedFormData['First Name']} ${processedFormData['Last Name']}`.trim()
+        },
+        itemType: processedFormData['Item Type'],
+        status: processedFormData['Status']
+      });
+
       setFormData({
         'First Name': '',
         'Last Name': '',

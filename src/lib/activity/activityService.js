@@ -17,8 +17,8 @@ export const activityService = {
         fields: {
           'logId': logId,
           'activityTime': activityTime,
-          'actionType': actionType,
-          'description': description,
+          'actionType': description,
+          'description': '',
           'collection': collection
         }
       }]);
@@ -78,7 +78,9 @@ export const activityService = {
       }
     };
 
-    return activityService.logActivity('repair', action, normalizedDetails);
+    const actionType = action === 'create' ? 'created' : action === 'update' ? 'updated' : action;
+
+    return activityService.logActivity('repair', actionType, normalizedDetails);
   },
 
   logRentalActivity: async (action, details) => {
@@ -103,18 +105,16 @@ function generateDescription(type, action, details) {
   switch (type) {
     case 'repair':
       const repairId = details.fields?.['Repair ID'] || '';
-      const changes = Array.isArray(details.changes) && details.changes.length > 0
-        ? details.changes.join('; ')
-        : details.details || 'No changes';
       
-      if (action === 'update') {
-        return `Repair #${repairId}: ${changes}`;
+      if (action === 'create') {
+        return `Repair ticket #${repairId} created`;
       }
       
-      const customerName = details.customer?.name || 'Customer';
-      const itemType = details.itemType || details.item || 'item';
-      const status = details.status ? ` (Status: ${details.status})` : '';
-      return `${action} repair ticket for ${customerName} - ${itemType}${status}`;
+      if (action === 'update') {
+        return `Repair ticket #${repairId} updated`;
+      }
+      
+      return `Repair ticket #${repairId} ${action}`;
     
     case 'rental':
       return `${action} rental for ${details.customer?.name || 'customer'} - ${details.equipment?.name || 'item'}`;
