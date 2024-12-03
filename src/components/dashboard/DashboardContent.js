@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import DashboardStats from './DashboardStats';
 
-// Dynamically import charts
 const Line = dynamic(
   () => import('react-chartjs-2').then(mod => mod.Line),
   { ssr: false }
@@ -59,7 +58,6 @@ export default function DashboardContent() {
   return (
     <div className={`transition-all duration-300 ${isExpanded ? 'ml-64' : 'ml-20'}`}>
       <DashboardStats />
-      {/* Charts and other content would go here */}
     </div>
   );
 } 

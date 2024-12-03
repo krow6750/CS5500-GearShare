@@ -1,24 +1,3 @@
-/* old version before yixiao edits
-'use client';
-
-import { syncService } from '@/lib/sync/syncService';
-
-export function useActivityLog() {
-  const logActivity = async (action_type, description, details = {}) => {
-    try {
-      await syncService.logActivity({
-        action_type,
-        description,
-        details
-      });
-    } catch (error) {
-      console.error('Failed to log activity:', error);
-    }
-  };
-
-  return { logActivity };
-}
-*/
 
 require('dotenv').config();
 const axios = require('axios');

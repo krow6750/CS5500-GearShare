@@ -85,7 +85,6 @@ const transformRepairRecord = (record) => {
 };
 
 const validateRepairData = (repairData) => {
-  // Required fields validation
   const requiredFields = ['First Name', 'Last Name', 'Status'];
   const missingFields = requiredFields.filter(field => !repairData[field]);
   
@@ -93,22 +92,18 @@ const validateRepairData = (repairData) => {
     throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
   }
 
-  // Validate Status against enum
   if (repairData['Status'] && !STATUS.STATUS[repairData['Status']]) {
     throw new Error(`Invalid Status: ${repairData['Status']}. Must be one of: ${Object.keys(STATUS.STATUS).join(', ')}`);
   }
 
-  // Validate Payment type against enum
   if (repairData['Payment type'] && !STATUS.PAYMENTTYPE[repairData['Payment type']]) {
     throw new Error(`Invalid Payment type: ${repairData['Payment type']}. Must be one of: ${Object.keys(STATUS.PAYMENTTYPE).join(', ')}`);
   }
 
-  // Validate Requestor Type against enum
   if (repairData['Requestor Type'] && !STATUS.REQUESTOR_TYPE[repairData['Requestor Type']]) {
     throw new Error(`Invalid Requestor Type: ${repairData['Requestor Type']}. Must be one of: ${Object.keys(STATUS.REQUESTOR_TYPE).join(', ')}`);
   }
 
-  // Validate numeric fields
   const numericFields = {
     'Price Quote': parseFloat,
     'Final Price': parseFloat,
@@ -129,22 +124,20 @@ const validateRepairData = (repairData) => {
     }
   });
 
-  // Validate photo attachments - make it optional
   if (repairData['Photo/Attachment']) {
     if (!Array.isArray(repairData['Photo/Attachment'])) {
       repairData['Photo/Attachment'] = [repairData['Photo/Attachment']];
     }
     
     repairData['Photo/Attachment'] = repairData['Photo/Attachment']
-      .filter(photo => photo && photo.url) // Keep only valid entries
+      .filter(photo => photo && photo.url) 
       .map(photo => ({
-        url: photo.url  // Only pass the URL, let Airtable handle the rest
+        url: photo.url 
       }));
   } else {
-    repairData['Photo/Attachment'] = []; // Ensure it's always an array
+    repairData['Photo/Attachment'] = []; 
   }
 
-  // Validate and standardize date fields
   const dateFields = ['Submitted On', 'Created', 'Date Quoted', '(For Zapier)'];
   dateFields.forEach(field => {
     if (repairData[field]) {
@@ -158,16 +151,13 @@ const validateRepairData = (repairData) => {
     }
   });
 
-  // Add Owner validation and transformation
   if (repairData['Owner']) {
-    // Ensure Owner is an object with required fields
     if (typeof repairData['Owner'] !== 'object' || !repairData['Owner'].id || !repairData['Owner'].email || !repairData['Owner'].name) {
       throw new Error('Owner must be an object with id, email, and name');
     }
 
-    // Transform Owner to match Airtable's expected format
     repairData['Owner'] = {
-      id: repairData['Owner'].id,  // Keep as is, don't stringify
+      id: repairData['Owner'].id,  
       email: repairData['Owner'].email,
       name: repairData['Owner'].name
     };
@@ -175,7 +165,6 @@ const validateRepairData = (repairData) => {
     console.log('Validated Owner object:', repairData['Owner']);
   }
 
-  // Validate single select fields against allowed values
   const singleSelectValidations = {
     'Status': [
       "Finished, Picked Up",
@@ -213,26 +202,22 @@ const validateRepairData = (repairData) => {
     ]
   };
 
-  // Validate select fields
   Object.entries(singleSelectValidations).forEach(([field, allowedValues]) => {
     if (repairData[field] && !allowedValues.includes(repairData[field])) {
       throw new Error(`Invalid ${field}: ${repairData[field]}. Must be one of: ${allowedValues.join(', ')}`);
     }
   });
 
-  // Ensure Weight (Ounces) has exactly one decimal place
   if (repairData['Weight (Ounces)']) {
     repairData['Weight (Ounces)'] = parseFloat(repairData['Weight (Ounces)']).toFixed(1);
   }
 
-  // Ensure currency fields are positive numbers with 2 decimal places
   ['Price Quote', 'Final Price', 'Amount Paid'].forEach(field => {
     if (repairData[field]) {
       repairData[field] = parseFloat(repairData[field]).toFixed(2);
     }
   });
 
-  // Ensure Autonumber is a positive integer
   if (repairData['Autonumber']) {
     repairData['Autonumber'] = Math.max(0, Math.floor(Number(repairData['Autonumber'])));
   }
@@ -243,7 +228,6 @@ const validateRepairData = (repairData) => {
 export const airtableService = {
   createRepairTicket: async (repairData) => {
     try {
-      // Check for existing repair ticket with the same Repair ID
       if (repairData['Repair ID']) {
         const existingRepair = await airtableService.findRepairByTicketId(repairData['Repair ID']);
         if (existingRepair) {
@@ -255,9 +239,7 @@ export const airtableService = {
       
       const validatedData = validateRepairData(repairData);
       
-      // Format fields according to Airtable's requirements
       const fields = {
-        // Text fields (string)
         'First Name': String(validatedData['First Name'] || ''),
         'Last Name': String(validatedData['Last Name'] || ''),
         'Internal Notes': String(validatedData['Internal Notes'] || ''),
@@ -268,38 +250,31 @@ export const airtableService = {
         'Damage or Defect': String(validatedData['Damage or Defect'] || ''),
         'Referred By': String(validatedData['Referred By'] || ''),
         
-        // Single select fields (must match exact values)
         'Status': validatedData['Status'] || DEFAULT_STATUS,
-        'Payment type': validatedData['Payment type'] || '',  // Must be one of: cash, check, Square, Venmo, combo
+        'Payment type': validatedData['Payment type'] || '',  
         'Delivery of Item': validatedData['Delivery of Item'] || '',
         'Requestor Type': validatedData['Requestor Type'] || '',
-        'Item Type': validatedData['Item Type'] || '',  // Must be one of: Jacket, Tent, etc.
+        'Item Type': validatedData['Item Type'] || '',  
         
-        // Number/Currency fields (must be positive numbers)
         'Price Quote': Math.max(0, parseFloat(validatedData['Price Quote']) || 0),
         'Final Price': Math.max(0, parseFloat(validatedData['Final Price']) || 0),
         'Amount Paid': Math.max(0, parseFloat(validatedData['Amount Paid']) || 0),
         'Weight (Ounces)': Math.max(0, parseFloat(validatedData['Weight (Ounces)']) || 0),
         
-        // Date fields (ISO 8601 format)
         'Submitted On': validatedData['Submitted On'] ? new Date(validatedData['Submitted On']).toISOString().split('T')[0] : null,
         'Created': validatedData['Created'] ? new Date(validatedData['Created']).toISOString().split('T')[0] : null,
         'Date Quoted': validatedData['Date Quoted'] ? new Date(validatedData['Date Quoted']).toISOString().split('T')[0] : null,
         
-        // DateTime fields (full ISO 8601)
         '(For Zapier)': validatedData['(For Zapier)'] ? new Date(validatedData['(For Zapier)']).toISOString() : null,
         'Paid On': validatedData['Paid On'] ? new Date(validatedData['Paid On']).toISOString() : null,
         
-        // Phone number
         'Telephone': String(validatedData['Telephone'] || ''),
         
-        // Email
         'Email': String(validatedData['Email'] || ''),
         
-        // Handle photo attachments according to Airtable's API requirements
         'Photo/Attachment': Array.isArray(validatedData['Photo/Attachment']) 
           ? validatedData['Photo/Attachment'].map(photo => ({
-              url: photo.url,  // This should be the base64 data URL
+              url: photo.url,  
               filename: photo.filename,
               type: photo.type
             }))
@@ -313,7 +288,7 @@ export const airtableService = {
       console.log('Validated fields for Airtable:', fields);
 
       const result = await base(TABLES.REPAIRS).create([{ fields }], {
-        typecast: true  // Enable typecast to handle select field values
+        typecast: true  
       });
       
       if (!result || !result.length) {

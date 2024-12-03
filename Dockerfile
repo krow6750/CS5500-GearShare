@@ -2,31 +2,24 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies required for node-gyp and other builds
 RUN apk add --no-cache python3 make g++ git
 
-# Install nodemon globally
 RUN npm install -g nodemon
 
-# Copy package files
 COPY package*.json ./
 COPY next.config.mjs ./
 COPY postcss.config.mjs ./
 COPY tailwind.config.js ./
 
-# Install dependencies
 RUN npm ci
 
-# Copy the rest of the application
 COPY . .
 
-# Set environment variables
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_SHARP_PATH=/tmp/node_modules/sharp
 ENV NEXT_RUNTIME="nodejs"
 
-# Define build arguments
 ARG AIRTABLE_API_KEY
 ARG AIRTABLE_BASE_ID
 ARG NEXT_PUBLIC_AIRTABLE_API_KEY
@@ -44,7 +37,6 @@ ARG AIRTABLE_ACTIVITY_LOG_BASE_ID
 ARG NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_API_KEY
 ARG NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID
 
-# Set environment variables from build arguments
 ENV AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
 ENV AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}
 ENV NEXT_PUBLIC_AIRTABLE_API_KEY=${NEXT_PUBLIC_AIRTABLE_API_KEY}
@@ -61,7 +53,6 @@ ENV AIRTABLE_ACTIVITY_LOG_API_KEY=${AIRTABLE_ACTIVITY_LOG_API_KEY}
 ENV AIRTABLE_ACTIVITY_LOG_BASE_ID=${AIRTABLE_ACTIVITY_LOG_BASE_ID}
 ENV NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_API_KEY=${NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_API_KEY}
 ENV NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID=${NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID}
-# Create .env file with proper environment variables
 RUN echo "# Airtable Configuration" > .env && \
     echo "AIRTABLE_API_KEY=${AIRTABLE_API_KEY}" >> .env && \
     echo "AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}" >> .env && \
@@ -86,11 +77,6 @@ RUN echo "# Airtable Configuration" > .env && \
     echo "NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_API_KEY=${NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_API_KEY}" >> .env && \
     echo "NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID=${NEXT_PUBLIC_AIRTABLE_ACTIVITY_LOG_BASE_ID}" >> .env 
 
-# Don't build in production mode
-# RUN npm run build  # Comment this out
-
-# Expose the port the app runs on
 EXPOSE 3001
 
-# Use npm run dev directly instead of nodemon
 CMD ["npm", "run", "dev"]

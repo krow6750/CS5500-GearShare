@@ -14,19 +14,15 @@ export default function RentalList() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Load rentals
   const loadRentals = async () => {
     try {
       setLoading(true);
       const orders = await booqableService.fetchAllOrders();
       
-      // Fetch additional details for each order
       const ordersWithDetails = await Promise.all(orders.map(async (order) => {
         try {
-          // Get customer details
           const customer = await booqableService.fetchCustomerById(order.customer_id);
           
-          // Get product details from order lines if they exist
           let productDetails = null;
           if (order.lines && order.lines.length > 0) {
             const productId = order.lines[0].product_id;

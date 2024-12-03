@@ -46,7 +46,6 @@ const templates = {
 export const templateService = {
   async getTemplate(templateId) {
     try {
-      // Try to get custom template from Firebase
       const customTemplate = await firebaseDB.query(COLLECTION, {
         where: ['id', '==', templateId]
       });
@@ -55,7 +54,6 @@ export const templateService = {
         return customTemplate[0];
       }
 
-      // Fall back to default template
       return this.getDefaultTemplate(templateId);
     } catch (error) {
       console.error('Error getting template:', error);
@@ -64,7 +62,6 @@ export const templateService = {
   },
 
   getDefaultTemplate(templateId) {
-    // Navigate the defaultTemplates object to find the template
     const [category, type] = templateId.split('_');
     return defaultTemplates[category]?.[type] || null;
   },

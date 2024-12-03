@@ -31,7 +31,6 @@ export default function EditRentalModal({ isOpen, onClose, rental, onSuccess }) 
     }
   };
 
-  // Reset form when rental changes
   useState(() => {
     if (rental) {
       setStartDate(rental.starts_at?.split('T')[0] || '');

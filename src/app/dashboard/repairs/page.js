@@ -23,15 +23,12 @@ const formatToMMDDYYYY = (dateString) => {
 const formatZapierDateTime = (dateTimeString) => {
   if (!dateTimeString) return '';
   
-  // Create Date object from UTC string
   const date = new Date(dateTimeString);
   
-  // Get date components in local time
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
   const year = date.getFullYear();
   
-  // Get time components in local time
   let hours = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -106,14 +103,12 @@ export default function RepairsPage() {
   const handleAddSuccess = async (newRepair) => {
     await queryClient.invalidateQueries(['repairs']);
     setIsAddModalOpen(false);
-    // Optionally, add a toast notification here
   };
 
   const handleEditSuccess = async (updatedRepair) => {
     await queryClient.invalidateQueries(['repairs']);
     setIsEditModalOpen(false);
     setSelectedRepair(null);
-    // Optionally, add a toast notification here
   };
 
   if (!isMounted) return null;
@@ -184,7 +179,6 @@ export default function RepairsPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Filter templates by type and sort by name
   const createRepairTemplates = templates?.filter(
     template => template.templateType === "Create Repair Email Template"
   ).sort((a, b) => a.templateName.localeCompare(b.templateName));
@@ -229,9 +223,9 @@ export default function RepairsPage() {
                 onChange={(e) => setSelectedCreateTemplate(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               >
-                <option value="">Select a template</option>
+                <option value="" className="text-black">Select a template</option>
                 {createRepairTemplates?.map((template) => (
-                  <option key={template.id} value={template.templateName}>
+                  <option key={template.id} value={template.templateName} className="text-black">
                     {template.templateName}
                   </option>
                 ))}
@@ -248,9 +242,9 @@ export default function RepairsPage() {
                 onChange={(e) => setSelectedCompletedTemplate(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               >
-                <option value="">Select a template</option>
+                <option value="" className="text-black">Select a template</option>
                 {completedRepairTemplates?.map((template) => (
-                  <option key={template.id} value={template.templateName}>
+                  <option key={template.id} value={template.templateName} className="text-black">
                     {template.templateName}
                   </option>
                 ))}

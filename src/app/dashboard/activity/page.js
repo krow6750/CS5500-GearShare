@@ -6,7 +6,6 @@ import { MagnifyingGlassIcon, PlusCircleIcon } from '@heroicons/react/24/outline
 import booqableService from '@/lib/booqable/booqableService';
 import { activityService } from '@/lib/activity/activityService';
 
-// Common styles with better borders and contrast
 const inputStyles = `
   w-full 
   rounded-md 
@@ -27,26 +26,19 @@ const inputStyles = `
 `;
 
 const labelStyles = "block text-base font-medium text-slate-900 mb-2";
-
-// Add this helper function near the top of the file, after the style constants
 const formatActivityDate = (dateString) => {
-  // If dateString is undefined or null, return a default value
   if (!dateString) {
     console.log('No date provided');
     return 'No date';
   }
 
-  // Log the incoming date string for debugging
   console.log('Formatting date:', dateString);
 
   let date;
   try {
-    // Try parsing the date string directly
     date = new Date(dateString);
     
-    // Check if the date is valid
     if (isNaN(date.getTime())) {
-      // If the date string contains a space, try parsing as date-time format
       if (dateString.includes(' ')) {
         const [datePart, timePart] = dateString.split(' ');
         const [month, day, year] = datePart.split('-');
@@ -54,13 +46,11 @@ const formatActivityDate = (dateString) => {
         
         date = new Date(year, month - 1, day, hours, minutes);
       } else {
-        // Try parsing as simple date format
         const [month, day, year] = dateString.split('-');
         date = new Date(year, month - 1, day);
       }
     }
 
-    // If we still don't have a valid date, return a formatted error
     if (isNaN(date.getTime())) {
       console.error('Invalid date:', dateString);
       return 'Invalid date';
@@ -74,7 +64,6 @@ const formatActivityDate = (dateString) => {
   }
 };
 
-// Search Input Component
 function SearchableSelect({ 
   options, 
   value, 
@@ -86,7 +75,6 @@ function SearchableSelect({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  // Move the filtering to a useMemo to avoid state updates during render
   const filteredOptions = useMemo(() => 
     options.filter(option => 
       renderOption(option).toLowerCase().includes(searchTerm.toLowerCase())
@@ -180,7 +168,6 @@ function CustomerSearch({ onSelect }) {
     setError(null);
 
     try {
-      // Create customer in Booqable
       const customerData = {
         name: newCustomer.name,
         email: newCustomer.email.toLowerCase(),
@@ -191,10 +178,8 @@ function CustomerSearch({ onSelect }) {
       const createdCustomer = await booqableService.createCustomer(customerData);
       console.log('Customer created:', createdCustomer);
 
-      // Select the new customer
       handleCustomerSelection(createdCustomer);
       
-      // Reset form and close modal
       setShowNewCustomerForm(false);
       setNewCustomer({ name: '', email: '', phone: '' });
       setSearchTerm('');
@@ -206,7 +191,6 @@ function CustomerSearch({ onSelect }) {
     }
   };
 
-  // Add search functionality
   useEffect(() => {
     const searchCustomers = async () => {
       if (!searchTerm || searchTerm.length < 3) {
@@ -320,7 +304,6 @@ function CustomerSearch({ onSelect }) {
         </div>
       )}
 
-      {/* New Customer Modal */}
       <Dialog open={showNewCustomerForm} onClose={() => setShowNewCustomerForm(false)} className="relative z-[60]">
         <div className="fixed inset-0 bg-slate-900/30" aria-hidden="true" />
         
@@ -412,7 +395,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
     quantity: '1'
   });
 
-  // Load equipment on mount
   useEffect(() => {
     const loadEquipment = async () => {
       try {
@@ -427,7 +409,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
     loadEquipment();
   }, []);
 
-  // Calculate total days when dates change
   useEffect(() => {
     if (formData.start_date && formData.end_date) {
       const start = new Date(formData.start_date);
@@ -437,12 +418,10 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
     }
   }, [formData.start_date, formData.end_date]);
 
-  // Calculate total cost
   const selectedEquipment = equipment.find(e => e.id === formData.selectedEquipment);
   const totalCost = selectedEquipment ? 
     (selectedEquipment.base_price_in_cents / 100 * (parseInt(formData.quantity) || 0) * totalDays) : 0;
 
-  // Add new effect for loading activities
   useEffect(() => {
     loadActivities();
   }, []);
@@ -463,7 +442,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
     setLoading(true);
     setError(null);
     
-    // Validate quantity
     const quantity = parseInt(formData.quantity);
     if (!quantity || quantity < 1) {
       setError('Please enter a valid quantity');
@@ -476,12 +454,10 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
         throw new Error('Please select a customer');
       }
 
-      // First, ensure the customer exists in Booqable
       let booqableCustomer;
       try {
         booqableCustomer = await booqableService.fetchCustomerById(selectedCustomer.id);
       } catch (error) {
-        // If customer doesn't exist in Booqable, create them
         console.log('Creating new customer in Booqable');
         booqableCustomer = await booqableService.createCustomer({
           name: selectedCustomer.name,
@@ -489,7 +465,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
         });
       }
 
-      // Create rental order in Booqable
       const rentalData = {
         data: {
           type: "orders",
@@ -509,16 +484,13 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
       const booqableOrder = await booqableService.createRental(rentalData);
       console.log('Booqable order created:', booqableOrder);
 
-      // Add activity logging
       await activityService.logRentalActivity('create', {
         customer: selectedCustomer,
         equipment: selectedEquipment
       });
 
-      // Refresh activities
       await loadActivities();
 
-      // Reset form
       setFormData({
         selectedEquipment: '',
         start_date: '',
@@ -552,7 +524,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
 
   return (
     <div className="space-y-8">
-      {/* Activity Log Section */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-slate-200">
           <h2 className="text-xl font-semibold text-slate-900">Recent Activity</h2>
@@ -562,10 +533,10 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
             <div className="animate-pulse text-slate-500">Loading activities...</div>
           ) : activities.length > 0 ? (
             <div className="space-y-4">
-              {activities.map((activity) => (
+              {activities.map((activity, index) => (
                 <div
-                  key={activity.fields.logId}
-                  className="p-4 bg-slate-50 rounded-md border border-slate-200"
+                  key={activity.fields.logId || `activity-${activity.id || index}`}
+                  className="bg-white rounded-lg border border-slate-200 p-4"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -591,7 +562,6 @@ export default function AddRentalModal({ isOpen = false, onClose = () => {}, onS
         </div>
       </div>
 
-      {/* Keep existing Dialog component */}
       <Dialog 
         open={Boolean(isOpen)}
         onClose={onClose}

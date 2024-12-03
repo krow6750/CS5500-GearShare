@@ -48,16 +48,13 @@ export default function EditEquipmentModal({ isOpen, onClose, equipment, onSucce
     setError(null);
     
     try {
-      // Update in Firebase
       await firebaseDB.update(COLLECTIONS.EQUIPMENT, equipment.id, formData);
-      
-      // Sync with Airtable
+
       await syncService.syncWithAirtable('equipment', {
         ...formData,
         id: equipment.id
       });
       
-      // Log activity
       await syncService.logActivity({
         log_id: Date.now(),
         user_id: 'system',

@@ -9,7 +9,7 @@ export const formatDate = (dateString) => {
     });
   } catch (error) {
     console.error('Date formatting error:', error);
-    return dateString; // Return original string if parsing fails
+    return dateString; 
   }
 };
 

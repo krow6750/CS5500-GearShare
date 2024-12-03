@@ -12,7 +12,6 @@ import { emailServices } from '@/lib/email/emailService';
 import { useQuery } from '@tanstack/react-query';
 import { emailTemplateService } from '@/lib/airtable/emailTemplateServices';
 
-// Matching styles from AddRentalModal
 const inputStyles = `
   w-full 
   rounded-md 
@@ -34,7 +33,6 @@ const inputStyles = `
 
 const labelStyles = "block text-base font-medium text-slate-900 mb-2";
 
-// Add these constants at the top of the file
 const PAYMENT_TYPES = ['cash', 'check', 'Square', 'Venmo', 'combo'];
 
 const DELIVERY_OPTIONS = [
@@ -118,7 +116,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
     }
   });
 
-  // Filter templates by type and sort by name - matching EditRepairModal
   const createRepairTemplates = templates?.filter(
     template => template.templateType === "Create Repair Email Template"
   ).sort((a, b) => a.templateName.localeCompare(b.templateName));
@@ -159,13 +156,11 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
         'Sent Email': false
       };
 
-      // Check if repair ticket with this ID already exists
       const existingRepair = await airtableService.findRepairByTicketId(data['Repair ID']);
       if (existingRepair) {
         throw new Error(`A repair ticket with ID ${data['Repair ID']} already exists`);
       }
 
-      // Create in Airtable with the URL directly
       let processedFormData = { ...data };
       if (data['Photo/Attachment']?.length > 0) {
         processedFormData['Photo/Attachment'] = data['Photo/Attachment'];
@@ -173,7 +168,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
         processedFormData['Photo/Attachment'] = [];
       }
 
-      // Add logging for email conditions
       console.log('Email sending conditions:', {
         hasTemplate: !!selectedCreateTemplate,
         hasEmail: !!data['Email'],
@@ -181,7 +175,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
         status: data['Status']
       });
 
-      // Send email if template is selected and status matches initial statuses
       if (selectedCreateTemplate && 
           data['Email'] && 
           INITIAL_STATUSES.includes(data['Status'])) {
@@ -203,7 +196,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
           console.log('Email sent successfully');
         } catch (emailError) {
           console.error('Failed to send email:', emailError);
-          // Don't throw error here to allow ticket creation to succeed
         }
       } else {
         console.log('Skipping email send - conditions not met');
@@ -212,7 +204,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
       let airtableRecord = await airtableService.createRepairTicket(processedFormData);
       console.log('Airtable record created:', airtableRecord);
 
-      // Reset form data to initial state
       setFormData({
         'First Name': '',
         'Last Name': '',
@@ -237,7 +228,7 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
         'Telephone': '',
         'Weight (Ounces)': 0,
         'Amount Paid': 0,
-        'Repair ID': generateId(), // Generate a new ID
+        'Repair ID': generateId(),
         '(For Zapier)': ''
       });
 
@@ -292,7 +283,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
                   )}
                   
                   <div className="grid grid-cols-2 gap-6">
-                    {/* Left Column */}
                     <div className="space-y-6">
                       <div>
                         <label className={labelStyles}>Repair ID</label>
@@ -409,7 +399,6 @@ export default function AddRepairModal({ isOpen, onClose, onSuccess, defaultTemp
                       </div>
                     </div>
 
-                    {/* Right Column */}
                     <div className="space-y-6">
                       <div>
                         <label className={labelStyles}>Damage or Defect</label>

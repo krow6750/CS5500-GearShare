@@ -11,7 +11,6 @@ import { emailServices } from '@/lib/email/emailService';
 import { useQuery } from '@tanstack/react-query';
 import { emailTemplateService } from '@/lib/airtable/emailTemplateServices';
 
-// Add these constants at the top of the file
 const PAYMENT_TYPES = ['cash', 'check', 'Square', 'Venmo', 'combo'];
 
 const DELIVERY_OPTIONS = [
@@ -40,7 +39,6 @@ const ITEM_TYPES = [
   'Other'
 ];
 
-// Reuse the same styles
 const inputStyles = `
   w-full 
   rounded-md 
@@ -62,7 +60,6 @@ const inputStyles = `
 
 const labelStyles = "block text-base font-medium text-slate-900 mb-2";
 
-// Reuse SearchableSelect component from AddRepairModal
 function SearchableSelect({ options, value, onChange, label, placeholder, renderOption, disabled }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -73,7 +70,6 @@ function SearchableSelect({ options, value, onChange, label, placeholder, render
 
   const selectedOption = options.find(opt => opt.id === value);
 
-  // If disabled, just show the selected value
   if (disabled && selectedOption) {
     return (
       <div className="relative">
@@ -138,7 +134,6 @@ function SearchableSelect({ options, value, onChange, label, placeholder, render
   );
 }
 
-// Add this new component for read-only fields
 function ReadOnlyField({ label, value }) {
   return (
     <div className="relative">
@@ -155,14 +150,13 @@ export default function EditRepairModal({
   onClose, 
   repair, 
   onSuccess, 
-  selectedCompletedTemplate, 
+  completedTemplate, 
   setSelectedCompletedTemplate
 }) {
-  // 1. All useState hooks
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState(selectedCompletedTemplate || '');
+  const [selectedTemplate, setSelectedTemplate] = useState(completedTemplate);
   const [previousStatus, setPreviousStatus] = useState('');
   const [formData, setFormData] = useState({
     'First Name': '',
@@ -190,7 +184,6 @@ export default function EditRepairModal({
     'Date Quoted': new Date().toISOString().split('T')[0]
   });
 
-  // 2. All useQuery hooks
   const { data: templates } = useQuery({
     queryKey: ['emailTemplates'],
     queryFn: async () => {
@@ -204,13 +197,11 @@ export default function EditRepairModal({
     }
   });
 
-  // Filter templates by type and sort by name - matching the logic from page.js
 
   const completedRepairTemplates = templates?.filter(
     template => template.templateType === "Completed Repair Email Template"
   ).sort((a, b) => a.templateName.localeCompare(b.templateName));
 
-  // 3. All useEffect hooks
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -253,7 +244,12 @@ export default function EditRepairModal({
     }
   }, [repair]);
 
-  // Rest of the component logic...
+  useEffect(() => {
+    if (completedTemplate) {
+      setSelectedTemplate(completedTemplate);
+    }
+  }, [completedTemplate]);
+
   if (!isMounted) return null;
 
   const handleSubmit = async (e) => {
@@ -286,18 +282,16 @@ export default function EditRepairModal({
         '(For Zapier)': formData['(For Zapier)'],
         'Type of Item': formData['Type of Item'],
         'Date Quoted': formData['Date Quoted'],
-        'Completed Repair Template': selectedCompletedTemplate,
+        'Completed Repair Template': completedTemplate,
         'Sent Email': false
       };
       
-      // Check if status changed to "Finished, Customer Contacted" and there's an email
       if (formData['Status'] === STATUS.STATUS['Finished, Customer Contacted'] && 
           formData['Status'] !== previousStatus &&
           formData['Email'] &&
           selectedTemplate) {
         
         try {
-          // Send email using the selected template
           await emailServices.sendEmail({
             templateName: selectedTemplate,
             recipients: formData['Email'],
@@ -311,17 +305,19 @@ export default function EditRepairModal({
             notes: formData['Internal Notes'] || ''
           });
           
-          // Set Sent Email to true only if email was sent successfully
           updateData['Sent Email'] = true;
         } catch (emailError) {
           console.error('Failed to send completion email:', emailError);
-          // Don't throw error here to allow update to succeed
         }
       }
 
-      // Update in Airtable using the record ID directly
       if (repair && repair.id) {
         await airtableService.updateRepairTicket(repair.id, updateData);
+
+        await activityService.logRepairActivity('update', {
+          fields: updateData,
+          details: generateUpdateDetails(repair.fields, updateData)
+        });
       } else {
         throw new Error('No repair ID found');
       }
@@ -338,6 +334,85 @@ export default function EditRepairModal({
     }
   };
 
+  const generateUpdateDetails = (oldData, newData) => {
+    const changes = [];
+    
+    const numbersDiffer = (a, b) => {
+      const numA = parseFloat(a || 0).toFixed(2);
+      const numB = parseFloat(b || 0).toFixed(2);
+      return numA !== numB;
+    };
+
+    Object.keys(newData).forEach(key => {
+      if (oldData[key] === newData[key]) return;
+      
+      if (['(For Zapier)', 'Sent Email', 'Completed Repair Template'].includes(key)) return;
+
+      switch (key) {
+        case 'First Name':
+        case 'Last Name':
+          if (!changes.some(change => change.includes('name changed'))) {
+            const oldFullName = `${oldData['First Name'] || ''} ${oldData['Last Name'] || ''}`.trim();
+            const newFullName = `${newData['First Name'] || ''} ${newData['Last Name'] || ''}`.trim();
+            if (oldFullName !== newFullName) {
+              changes.push(`name changed from "${oldFullName}" to "${newFullName}"`);
+            }
+          }
+          break;
+
+        case 'Status':
+          if (oldData[key] !== newData[key]) {
+            changes.push(`Status changed from "${oldData[key] || 'Not Set'}" to "${newData[key]}"`);
+          }
+          break;
+
+        case 'Price Quote':
+          if (numbersDiffer(oldData[key], newData[key])) {
+            changes.push(`Price Quote updated from $${oldData[key] || 0} to $${newData[key]}`);
+          }
+          break;
+
+        case 'Final Price':
+          if (numbersDiffer(oldData[key], newData[key])) {
+            changes.push(`Final Price updated from $${oldData[key] || 0} to $${newData[key]}`);
+          }
+          break;
+
+        case 'Amount Paid':
+          if (numbersDiffer(oldData[key], newData[key])) {
+            changes.push(`Amount Paid updated from $${oldData[key] || 0} to $${newData[key]}`);
+          }
+          break;
+
+        case 'Item Type':
+          if (oldData[key] !== newData[key]) {
+            changes.push(`Item Type changed from "${oldData[key] || 'Not Set'}" to "${newData[key]}"`);
+          }
+          break;
+
+        case 'Email':
+        case 'Telephone':
+        case 'Brand':
+        case 'Color':
+        case 'Damage or Defect':
+        case 'Internal Notes':
+        case 'Delivery of Item':
+        case 'Payment type':
+        case 'Requestor Type':
+          if (oldData[key] !== newData[key]) {
+            const oldValue = oldData[key] || 'Not Set';
+            const newValue = newData[key] || 'Not Set';
+            if (oldValue !== newValue) {
+              changes.push(`${key} updated from "${oldValue}" to "${newValue}"`);
+            }
+          }
+          break;
+      }
+    });
+
+    return changes;
+  };
+
   const handleTemplateChange = (e) => {
     const newValue = e.target.value;
     setSelectedTemplate(newValue);
@@ -346,7 +421,6 @@ export default function EditRepairModal({
     }
   };
 
-  // Update the status options to use Airtable's status values
   const statusOptions = [
     STATUS.STATUS['Finished, Picked Up'],
     STATUS.STATUS['Contacted, Awaiting Customer Response'],
@@ -358,7 +432,6 @@ export default function EditRepairModal({
     STATUS.STATUS['In Repair']
   ];
 
-  // Add this after the templates query
   console.log('Templates Data:', {
     allTemplates: templates,
     completedRepairTemplates,
@@ -388,18 +461,15 @@ export default function EditRepairModal({
                   )}
 
                   <div className="mb-4">
-                    <label htmlFor="emailTemplate" className={labelStyles}>
-                      Completed Repair Email Template
-                    </label>
+                    <label className={labelStyles}>Completed Repair Email Template</label>
                     <select
-                      id="emailTemplate"
                       className={inputStyles}
                       value={selectedTemplate}
                       onChange={handleTemplateChange}
                     >
-                      <option value="">Select a template</option>
-                      {completedRepairTemplates?.map((template) => (
-                        <option key={template.id} value={template.templateName}>
+                      <option key="default-template" value="">Select Template...</option>
+                      {completedRepairTemplates?.map(template => (
+                        <option key={`template-${template.id}`} value={template.templateName}>
                           {template.templateName}
                         </option>
                       ))}
@@ -407,7 +477,6 @@ export default function EditRepairModal({
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
-                    {/* Left Column */}
                     <div className="space-y-6">
                       <div>
                         <label className={labelStyles}>Repair ID</label>
@@ -472,9 +541,9 @@ export default function EditRepairModal({
                           value={formData['Item Type']}
                           onChange={(e) => setFormData({...formData, 'Item Type': e.target.value})}
                         >
-                          <option value="">Select Item Type</option>
+                          <option key="default-item" value="">Select Item Type</option>
                           {ITEM_TYPES.map(type => (
-                            <option key={type} value={type}>{type}</option>
+                            <option key={`item-${type}`} value={type}>{type}</option>
                           ))}
                         </select>
                       </div>
@@ -533,7 +602,6 @@ export default function EditRepairModal({
                       </div>
                     </div>
 
-                    {/* Right Column */}
                     <div className="space-y-6">
                       <div>
                         <label className={labelStyles}>Payment type</label>
@@ -542,9 +610,9 @@ export default function EditRepairModal({
                           value={formData['Payment type']}
                           onChange={(e) => setFormData({...formData, 'Payment type': e.target.value})}
                         >
-                          <option value="">Select Payment Type</option>
+                          <option key="default-payment" value="">Select Payment Type</option>
                           {PAYMENT_TYPES.map(type => (
-                            <option key={type} value={type}>{type}</option>
+                            <option key={`payment-${type}`} value={type}>{type}</option>
                           ))}
                         </select>
                       </div>
@@ -625,9 +693,9 @@ export default function EditRepairModal({
                           value={formData['Requestor Type']}
                           onChange={(e) => setFormData({...formData, 'Requestor Type': e.target.value})}
                         >
-                          <option value="">Select Requestor Type</option>
+                          <option key="default-requestor" value="">Select Requestor Type</option>
                           {REQUESTOR_TYPES.map(type => (
-                            <option key={type} value={type}>{type}</option>
+                            <option key={`requestor-${type}`} value={type}>{type}</option>
                           ))}
                         </select>
                       </div>
@@ -649,9 +717,9 @@ export default function EditRepairModal({
                           value={formData['Delivery of Item']}
                           onChange={(e) => setFormData({...formData, 'Delivery of Item': e.target.value})}
                         >
-                          <option value="">Select Delivery Method</option>
+                          <option key="default-delivery" value="">Select Delivery Option</option>
                           {DELIVERY_OPTIONS.map(option => (
-                            <option key={option} value={option}>{option}</option>
+                            <option key={`delivery-${option}`} value={option}>{option}</option>
                           ))}
                         </select>
                       </div>

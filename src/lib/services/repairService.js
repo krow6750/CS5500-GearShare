@@ -1,13 +1,10 @@
 import { airtableService } from '@/lib/airtable/airtableService';
-//import { emailService } from '@/lib/email/emailService';
-import { STATUS } from '@/lib/airtable/models';
 
 export const repairService = {
   async createRepair(data) {
     try {
       const repairRecord = await airtableService.createRepairTicket(data);
 
-      // Send email notification if email is provided
       if (repairRecord.fields.Email) {
         const emailResult = await emailService.sendRepairUpdate({
           repair_ticket_id: repairRecord.fields['Repair ID'],
@@ -33,7 +30,6 @@ export const repairService = {
       const currentRepair = await airtableService.getRepairTicket(airtableId);
       const updatedRepair = await airtableService.updateRepairTicket(airtableId, data);
 
-      // Send email notification if status changed
       if (currentRepair.fields.Status !== updatedRepair.fields.Status 
           && updatedRepair.fields.Email) {
         const emailResult = await emailService.sendRepairUpdate({
@@ -95,7 +91,6 @@ export const repairService = {
     try {
       const repairRecord = await airtableService.recreateRepairTicket(data);
       
-      // Send email notification if email is provided
       if (repairRecord.fields.Email) {
         const emailResult = await emailService.sendRepairUpdate({
           repair_ticket_id: repairRecord.fields['Repair ID'],

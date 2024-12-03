@@ -23,7 +23,6 @@ export default function RentalsPage() {
     return () => setIsMounted(false);
   }, []);
 
-  // Fetch both rentals and customers
   const { data: rentals, isLoading: rentalsLoading } = useQuery({
     queryKey: ['rentals'],
     queryFn: async () => {
@@ -38,16 +37,13 @@ export default function RentalsPage() {
     queryFn: () => booqableService.fetchAllCustomers()
   });
 
-  // Update the status color mapping
   const statusColors = {
     'RETURNED': 'bg-green-100 text-green-800',
     'RESERVED': 'bg-yellow-100 text-yellow-800',
     'PICKED_UP': 'bg-blue-100 text-blue-800',
-    // Default status color
     'DEFAULT': 'bg-slate-100 text-slate-800'
   };
 
-  // Define the searchable fields
   const searchFields = [
     { value: 'all', label: 'All Fields' },
     { value: 'number', label: 'Order #' },
@@ -58,7 +54,6 @@ export default function RentalsPage() {
     { value: 'price', label: 'Price' }
   ];
 
-  // Update the filtering logic
   const filteredRentals = rentals?.filter(rental => {
     const customer = customers?.find(c => c.id === rental.customer_id);
     
@@ -115,7 +110,6 @@ export default function RentalsPage() {
       ${isExpanded ? 'ml-64' : 'ml-20'}
       pr-8 pl-8
     `}>
-      {/* Header Section */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
@@ -151,7 +145,6 @@ export default function RentalsPage() {
         </div>
       </div>
 
-      {/* Table Section */}
       <div className="bg-white rounded-lg shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full divide-y divide-gray-200">
@@ -201,7 +194,6 @@ export default function RentalsPage() {
         </div>
       </div>
 
-      {/* Pagination Section */}
       <div className="mt-4 flex flex-col sm:flex-row items-center justify-between p-4 bg-white rounded-lg border border-slate-200">
         <div className="text-sm text-slate-600 mb-4 sm:mb-0">
           Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, rentals?.length || 0)} of {rentals?.length || 0}

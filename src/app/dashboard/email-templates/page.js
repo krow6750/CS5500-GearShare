@@ -5,7 +5,6 @@ import { emailTemplateService } from '@/lib/airtable/emailTemplateServices';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useSidebar } from '@/contexts/SidebarContext';
 
-// Update the template types constant
 const TEMPLATE_TYPES = [
   'Create Repair Email Template',
   'Completed Repair Email Template'
@@ -23,7 +22,7 @@ export default function EmailTemplatesPage() {
     templateName: '',
     templateSubject: '',
     templateBody: '',
-    templateType: '' // Start empty
+    templateType: '' 
   });
   const [textAreaRef, setTextAreaRef] = useState(null);
 
@@ -37,11 +36,10 @@ export default function EmailTemplatesPage() {
       setIsLoading(true);
       const fetchedTemplates = await emailTemplateService.fetchEmailTemplates();
       
-      // Sort templates by Autonumber in reverse order
       const sortedTemplates = [...fetchedTemplates].sort((a, b) => {
         const aAutonum = parseInt(a.autonumber) || 0;
         const bAutonum = parseInt(b.autonumber) || 0;
-        return bAutonum - aAutonum; // Reverse order (newest first)
+        return bAutonum - aAutonum; 
       });
       
       console.log('=== EMAIL TEMPLATES PAGE RESPONSE ===', {
@@ -108,7 +106,6 @@ export default function EmailTemplatesPage() {
       templateBody: newValue
     });
 
-    // Set cursor position after the inserted variable
     setTimeout(() => {
       textAreaRef.focus();
       const newCursorPos = start + variable.length;
@@ -140,7 +137,6 @@ export default function EmailTemplatesPage() {
       templateBody: newValue
     });
 
-    // Set cursor position after the inserted variable
     setTimeout(() => {
       textAreaRef.focus();
       const newCursorPos = start + variable.length;
@@ -157,7 +153,6 @@ export default function EmailTemplatesPage() {
       ${isExpanded ? 'ml-64' : 'ml-20'}
       pr-8 pl-8
     `}>
-      {/* Header Section */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
@@ -175,7 +170,6 @@ export default function EmailTemplatesPage() {
         </div>
       </div>
 
-      {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {templates.map((template) => (
           <div key={template.id} className="bg-white rounded-lg shadow-sm p-6">
@@ -206,7 +200,6 @@ export default function EmailTemplatesPage() {
         ))}
       </div>
 
-      {/* Edit Modal */}
       {selectedTemplate && editedTemplate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full">

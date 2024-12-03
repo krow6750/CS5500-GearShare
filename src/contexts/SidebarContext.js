@@ -9,7 +9,6 @@ export function SidebarProvider({ children }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Get initial state from localStorage
     const savedState = localStorage.getItem('sidebarExpanded');
     if (savedState !== null) {
       setIsExpanded(JSON.parse(savedState));
@@ -18,13 +17,11 @@ export function SidebarProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Only save to localStorage after initial mount
     if (mounted) {
       localStorage.setItem('sidebarExpanded', JSON.stringify(isExpanded));
     }
   }, [isExpanded, mounted]);
 
-  // Don't render children until after hydration
   if (!mounted) {
     return null;
   }

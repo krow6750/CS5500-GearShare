@@ -15,14 +15,14 @@ const Line = dynamic(
 );
 
 const REPAIR_CHART_COLORS = {
-  'In Repair': '#10B981',                                  // emerald-500
-  'Dropped Off, Awaiting Repair': '#3B82F6',              // blue-500
-  'Finished, Picked Up': '#8B5CF6',                       // violet-500
-  'Can\'t Repair': '#EF4444',                             // red-500
-  'Finished + Paid, In Drop-Box': '#F59E0B',             // amber-500
-  'Contacted, Awaiting Customer Response': '#EC4899',     // pink-500
-  'Finished, Customer Contacted': '#06B6D4',              // cyan-500
-  'Awaiting Drop-Off': '#6366F1'                         // indigo-500
+  'In Repair': '#10B981',                                 
+  'Dropped Off, Awaiting Repair': '#3B82F6',              
+  'Finished, Picked Up': '#8B5CF6',                       
+  'Can\'t Repair': '#EF4444',                           
+  'Finished + Paid, In Drop-Box': '#F59E0B',            
+  'Contacted, Awaiting Customer Response': '#EC4899',     
+  'Finished, Customer Contacted': '#06B6D4',             
+  'Awaiting Drop-Off': '#6366F1'                        
 };
 
 export default function DashboardStats({ rentals, equipment, repairs }) {
@@ -118,17 +118,14 @@ export default function DashboardStats({ rentals, equipment, repairs }) {
     });
 
     return last7Days.reduce((acc, date) => {
-      // Get rental revenue for this date - handle decimals correctly
       const rentalRevenue = rentalsArray
         .filter(rental => rental.starts_at?.split('T')[0] === date)
         .reduce((sum, rental) => {
-          // Convert string to number and handle decimals
           const amount = rental.price_in_cents?.toString().replace(/[$,]/g, '');
           const numericAmount = amount ? parseFloat(amount) : 0;
           return sum + numericAmount;
-        }, 0) / 100; // Convert cents to dollars
+        }, 0) / 100; 
 
-      // Get repair revenue for this date
       const repairRevenue = repairs
         ?.filter(repair => repair.fields['Submitted On'] === date)
         .reduce((sum, repair) => {
@@ -139,7 +136,6 @@ export default function DashboardStats({ rentals, equipment, repairs }) {
 
       acc[date] = rentalRevenue + repairRevenue;
 
-      // Debug log for each date's calculations
       console.log(`Revenue for ${date}:`, {
         rentals: rentalsArray.filter(rental => rental.starts_at?.split('T')[0] === date)
           .map(r => ({
@@ -289,7 +285,7 @@ export default function DashboardStats({ rentals, equipment, repairs }) {
                   layout: {
                     padding: {
                       top: 20,
-                      right: 200,  // Increased padding for legend
+                      right: 200,  
                       bottom: 20,
                       left: 20
                     }

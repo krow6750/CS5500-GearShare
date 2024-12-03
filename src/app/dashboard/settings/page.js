@@ -62,7 +62,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Account Information */}
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Account Information</h2>
           <div className="space-y-4">
@@ -79,7 +78,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Password Change */}
         <form onSubmit={handlePasswordChange} className="bg-white shadow-sm rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Change Password</h2>
           <div className="space-y-4">
@@ -117,7 +115,6 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        {/* Account Actions */}
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Account Actions</h2>
           <div className="space-y-4">

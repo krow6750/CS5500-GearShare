@@ -13,7 +13,6 @@ export default function DeleteRentalModal({ isOpen, onClose, rental, onSuccess }
     setError(null);
 
     try {
-      // Cancel the order in Booqable
       await booqableService.updateOrder(rental.id, {
         status: 'canceled',
         archived: true

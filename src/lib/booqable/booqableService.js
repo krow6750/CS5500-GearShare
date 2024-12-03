@@ -11,10 +11,6 @@ if (!BOOQABLE_BASE_URL) {
   console.error('BOOQABLE_BASE_URL is not set in environment variables');
 }
 
-/**
- * Fetches all orders from the Booqable API
- * @returns {Promise<Order[]>}
- */
 async function fetchAllOrders() {
   try {
     const response = await axios.get(`${BOOQABLE_BASE_URL}/boomerang/orders`, {
@@ -31,12 +27,10 @@ async function fetchAllOrders() {
       }
     });
 
-    // Debug logs
     console.log('API Response included:', response.data.included);
     console.log('First order relationships:', response.data.data[0]?.relationships);
 
     const orders = response.data.data.map(order => {
-      // Debug log for each order
       console.log(`Processing order ${order.id}:`, {
         included: response.data.included?.filter(item => 
           item.type === 'stock_items' && 
@@ -77,13 +71,6 @@ async function fetchAllOrders() {
   }
 }
 
-
-
-/**
- * Fetches customer details from the Booqable API by ID
- * @param {string} customerId - The ID of the customer
- * @returns {Promise<Customer>}
- */
 async function fetchAllProducts() {
   try {
     const baseUrl = BOOQABLE_BASE_URL.endsWith('/api') 
@@ -139,11 +126,6 @@ async function fetchAllProducts() {
 }
 
 
-/**
- * Fetches customer details from the Booqable API by ID
- * @param {string} customerId - The ID of the customer
- * @returns {Promise<Customer>}
- */
 async function fetchCustomerById(customerId) {
   try {
     const response = await axios.get(`${BOOQABLE_BASE_URL}/boomerang/customers/${customerId}`, {
@@ -178,11 +160,7 @@ async function fetchCustomerById(customerId) {
 }
 
 
-/**
- * Sends an email notification using the Booqable API
- * @param {string[]} recipients - The email addresses of the recipients
- * @param {string} subject - The subject line for the email
- */
+
 async function sendEmailNotification(recipients, subject, body, email_template_id, order_id, customer_id, document_ids) {
   try {
     const response = await axios.post(
@@ -217,12 +195,6 @@ async function sendEmailNotification(recipients, subject, body, email_template_i
   }
 }
 
-/**
- * Creates a new customer in Booqable
- * @param {string} name - The name of the customer
- * @param {string} email - The email of the customer
- * @returns {Promise<Object>} - The created customer object
- */
 async function createCustomer(name, email) {
   try {
     const response = await axios.post(
@@ -265,12 +237,6 @@ async function createCustomer(name, email) {
   }
 }
 
-/**
- * Updates an existing customer in Booqable
- * @param {string} customerId - The ID of the customer to update
- * @param {Object} updateData - The data to update (can include name, email, etc.)
- * @returns {Promise<Object>} - The updated customer object
- */
 async function updateCustomer(customerId, updateData) {
   try {
     const response = await axios.put(
@@ -314,12 +280,6 @@ async function updateCustomer(customerId, updateData) {
   }
 }
 
-/**
- * Updates an existing order in Booqable
- * @param {string} orderId - The ID of the order to update
- * @param {Object} updateData - The data to update (can include customer_id, starts_at, stops_at, etc.)
- * @returns {Promise<Object>} - The updated order object
- */
 async function updateOrder(orderId, updateData) {
   try {
     const response = await axios.put(
@@ -370,11 +330,7 @@ async function updateOrder(orderId, updateData) {
     }
   }
 }
-/**
- * Fetches an order from Booqable by its ID
- * @param {string} orderId - The ID of the order to fetch
- * @returns {Promise<Object>} - The order object
- */
+
 async function fetchOrderById(orderId) {
   try {
     const response = await axios.get(
@@ -422,11 +378,7 @@ async function fetchOrderById(orderId) {
   }
 }
 
-/**
- * Fetches a product from Booqable by its ID
- * @param {string} productId - The ID of the product to fetch
- * @returns {Promise<Object>} - The product object
- */
+
 async function fetchProductById(productId) {
   try {
     const response = await axios.get(
@@ -473,7 +425,6 @@ async function fetchProductById(productId) {
       shortage_limit: productData.attributes.shortage_limit
     };
 
-    // Include relationships if they exist
     if (response.data.included) {
       product.relationships = {};
       response.data.included.forEach(item => {
@@ -494,11 +445,6 @@ async function fetchProductById(productId) {
   }
 }
 
-/**
- * Creates a new product in Booqable
- * @param {Object} productData - The data for the new product
- * @returns {Promise<Object>} - The created product object
- */
 async function createProduct(productData) {
   try {
     const response = await axios.post(
@@ -540,12 +486,7 @@ async function createProduct(productData) {
   }
 }
 
-/**
- * Updates an existing product in Booqable
- * @param {string} productId - The ID of the product to update
- * @param {Object} productData - The data to update the product with
- * @returns {Promise<Object>} - The updated product object
- */
+
 async function updateProduct(productId, productData) {
   try {
     const response = await axios.put(
@@ -588,10 +529,6 @@ async function updateProduct(productId, productData) {
   }
 }
 
-/**
- * Fetches all customers from the Booqable API
- * @returns {Promise<Array>} Array of customer objects
- */
 async function fetchAllCustomers() {
   try {
     const response = await axios.get(`${BOOQABLE_BASE_URL}/boomerang/customers`, {
@@ -628,24 +565,18 @@ async function fetchAllCustomers() {
   }
 }
 
-/**
- * Fetches all related data from the Booqable API
- * @returns {Promise<Object>} - The combined data object
- */
+
 async function fetchAllRelatedData() {
   try {
-    // Fetch all data in parallel
     const [orders, products, customers] = await Promise.all([
       fetchAllOrders(),
       fetchAllProducts(),
       fetchAllCustomers()
     ]);
 
-    // Create lookup maps for faster access
     const customerMap = new Map(customers.map(customer => [customer.id, customer]));
     const productMap = new Map(products.map(product => [product.id, product]));
 
-    // Combine the data
     const combinedData = {
       orders: orders.map(order => ({
         ...order,
@@ -658,7 +589,6 @@ async function fetchAllRelatedData() {
       })),
       products: products,
       customers: customers,
-      // Add lookup maps for convenient access
       lookups: {
         customerMap,
         productMap

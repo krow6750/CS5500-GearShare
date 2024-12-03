@@ -15,13 +15,11 @@ export const emailServices = {
     notes
   }) {
     try {
-      // Get the email template
       const template = await emailTemplateService.fetchTemplateByName(templateName);
       if (!template) {
         throw new Error(`Email template '${templateName}' not found`);
       }
 
-      // Replace placeholders in subject and body
       const replacements = {
         '{{firstName}}': firstName || '',
         '{{lastName}}': lastName || '',
@@ -36,14 +34,12 @@ export const emailServices = {
       let subject = template.subject;
       let body = template.body;
 
-      // Replace all placeholders in both subject and body
       Object.entries(replacements).forEach(([placeholder, value]) => {
         const regex = new RegExp(placeholder, 'g');
         subject = subject.replace(regex, value);
         body = body.replace(regex, value);
       });
 
-      // Send email using Booqable service
       await booqableService.sendEmailNotification(
         recipients,
         subject,

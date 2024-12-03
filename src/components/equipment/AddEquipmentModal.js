@@ -7,7 +7,6 @@ import { COLLECTIONS, STATUS } from '@/lib/firebase/models';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { generateId } from '@/lib/utils/generateId';
 
-// Matching styles from AddRentalModal
 const inputStyles = `
   w-full 
   rounded-md 
@@ -73,7 +72,6 @@ export default function AddEquipmentModal({ isOpen, onClose, onSuccess }) {
     setLoading(true);
     setError(null);
     
-    // Validate quantity before submission
     const quantity = parseInt(formData.quantity);
     if (isNaN(quantity) || quantity < 1) {
       setError('Please enter a valid quantity (minimum 1)');
@@ -200,7 +198,6 @@ export default function AddEquipmentModal({ isOpen, onClose, onSuccess }) {
                   </div>
                 </div>
 
-                {/* Right Column */}
                 <div className="space-y-6">
                   <div>
                     <label className={labelStyles}>Price (per day)</label>

@@ -52,27 +52,41 @@ export const activityService = {
     }
   },
 
-  logRentalActivity: async (action, rentalDetails) => {
-    try {
-      const actionTypes = {
-        create: 'RENTAL_CREATED',
-        update: 'RENTAL_UPDATED',
-        delete: 'RENTAL_DELETED'
-      };
+  logActivity: async (type, action, details) => {
+    const logData = {
+      type,       
+      actionType: action, 
+      description: generateDescription(type, action, details),
+      activityTime: new Date().toISOString()
+    };
+    
+    return await activityService.createActivityLog(logData.actionType, logData.description, logData.type);
+  },
 
-      const description = `Rental ${action}: ${
-        rentalDetails.customer?.name || 'Unknown Customer'
-      } - ${rentalDetails.equipment?.name || 'Unknown Equipment'}`;
+  logRepairActivity: async (action, details) => {
+    const normalizedDetails = {
+      customer: {
+        name: details.customer?.name || 
+              (details.fields ? `${details.fields['First Name']} ${details.fields['Last Name']}`.trim() : 'Customer')
+      },
+      itemType: details.itemType || details.fields?.['Item Type'] || 'item',
+      status: details.status || details.fields?.['Status'],
+      details: details.details || '',
+      changes: details.changes || [],
+      fields: {
+        'Repair ID': details.fields?.['Repair ID'] || ''
+      }
+    };
 
-      return await activityService.createActivityLog(
-        actionTypes[action] || 'RENTAL_ACTION',
-        description,
-        'rentals'
-      );
-    } catch (error) {
-      console.error(`Error logging rental ${action}:`, error);
-      throw error;
-    }
+    return activityService.logActivity('repair', action, normalizedDetails);
+  },
+
+  logRentalActivity: async (action, details) => {
+    return activityService.logActivity('rental', action, details);
+  },
+
+  logEquipmentActivity: async (action, details) => {
+    return activityService.logActivity('equipment', action, details);
   }
 };
 
@@ -84,5 +98,33 @@ const formatDate = (date) => {
   const pad = (num) => (num < 10 ? '0' + num : num);
   return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
+
+function generateDescription(type, action, details) {
+  switch (type) {
+    case 'repair':
+      const repairId = details.fields?.['Repair ID'] || '';
+      const changes = Array.isArray(details.changes) && details.changes.length > 0
+        ? details.changes.join('; ')
+        : details.details || 'No changes';
+      
+      if (action === 'update') {
+        return `Repair #${repairId}: ${changes}`;
+      }
+      
+      const customerName = details.customer?.name || 'Customer';
+      const itemType = details.itemType || details.item || 'item';
+      const status = details.status ? ` (Status: ${details.status})` : '';
+      return `${action} repair ticket for ${customerName} - ${itemType}${status}`;
+    
+    case 'rental':
+      return `${action} rental for ${details.customer?.name || 'customer'} - ${details.equipment?.name || 'item'}`;
+    
+    case 'equipment':
+      return `${action} equipment: ${details.name || 'item'}`;
+    
+    default:
+      return `${action} ${type}`;
+  }
+}
 
 export default activityService;
