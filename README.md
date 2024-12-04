@@ -39,8 +39,6 @@ This document provides a comprehensive overview of the project aimed at enhancin
 | **User-Friendly Interface** | The product will feature a graphical interface that only requires basic skills such as clicking and typing. |
 
 ## Technology Stack
-#### Diagram 1
-![Diagram 1](Technology_Stack.png)
 
 | **Layer** | **Description**                                                                                                   |
 |---------------|-------------------------------------------------------------------------------------------------------------------|
@@ -49,7 +47,6 @@ This document provides a comprehensive overview of the project aimed at enhancin
 | **Backend**   | The initial development is designed to use Airtable to store user, inventory, and repair data.                     |
 
 ## Data Model
-![Diagram 2](Data_Model.png)
 
 The data model for this project is structured around five primary components: Users, Activity Logs, Repair Tickets, and Rental Records. Data will be interconnected and shared across these components through unique identifiers.
 
