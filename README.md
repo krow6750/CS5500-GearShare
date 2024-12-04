@@ -86,19 +86,19 @@ MacOS Port: [https://mega.nz/file/UvVCDa7Z#g1ACySbnSzif9FhNJMadgEqe7qegQ4fkaa9Vi
 
 This setup only needs to be completed once; a "GearShareLauncher" file will be created on your desktop which you can double click to run for all future uses.
 
-1. Download the MacOS Port from above
+1. Download the MacOS Port from above.
 
 2. Right click -> Open with -> Archive Utility
 
 3. Open terminal via Spotlight Search (Command + Space)
 
-4. {cd} into the new folder that was created. So, if you downloaded the .zip into your Downloads folder, you should do {cd Downloads} (These commands are case-sensitive)
+4. cd into the new folder that was created. So, if you downloaded the .zip into your Downloads folder, you should do {cd Downloads} (These commands are case-sensitive)
 
-5. {cd} into the "CS5500-GearShare" folder {(cd CS5500-GearShare)}
+5. cd into the "CS5500-GearShare" folder (cd CS5500-GearShare)
 
-6. Run this command to give the webapp launcher execution commands: {chmod +x installwebapp.sh}
+6. Run this command to give the webapp launcher execution commands: chmod +x installwebapp.sh
 
-7. Run {./installwebapp.sh} . This will create a launcher for the webapp on your desktop
+7. Run ./installwebapp.sh . This will create a launcher for the webapp on your desktop.
 
 9. You will see terminal open, installing various dependencies for the webapp to work. When it's complete, the webapp will be launched in your default browser.
 
