@@ -75,3 +75,8 @@ The data model for this project is structured around five primary components: Us
 | **Venmo API**         | This API can be used to automate the payment process through Venmo. [Venmo API Documentation](https://venmo.com/docs/overview/) |
 | **Square API**        | This API can be used to automate the payment process through Square. [Square APIs & SDKs](https://squareup.com/us/en/developers) |
 | **Firebase API**      | This API can be used to link the webapp & iOS databases. [Firebase API Documentation](https://firebase.google.com/docs/) |
+
+# Release
+
+Windows Port: https://mega.nz/file/5qETyJwA#vvRL0C0S77A4GNLJrDs5IRbnpy7-PCCqNdKWFzk4SEA
+MacOS Port: https://mega.nz/file/UvVCDa7Z#g1ACySbnSzif9FhNJMadgEqe7qegQ4fkaa9Vi7M-Am4
