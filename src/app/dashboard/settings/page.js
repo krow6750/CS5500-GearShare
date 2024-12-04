@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSidebar } from '../../../contexts/SidebarContext';
 import { SYSTEM_USER } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
+import { authService } from '@/lib/services/authService';
 
 export default function SettingsPage() {
   const { isExpanded } = useSidebar();
@@ -43,9 +44,16 @@ export default function SettingsPage() {
       return;
     }
 
-    setSuccess('Password updated successfully');
-    setPasswords({ newPassword: '', confirmPassword: '' });
-    setLoading(false);
+    try {
+      await authService.updatePassword(passwords.newPassword);
+      setSuccess('Password updated successfully');
+      setPasswords({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      setError('Failed to update password');
+      console.error('Password update error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,7 +95,7 @@ export default function SettingsPage() {
                 type="password"
                 value={passwords.newPassword}
                 onChange={(e) => setPasswords(prev => ({ ...prev, newPassword: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm text-black"
               />
             </div>
             <div>
@@ -96,7 +104,7 @@ export default function SettingsPage() {
                 type="password"
                 value={passwords.confirmPassword}
                 onChange={(e) => setPasswords(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm text-black"
               />
             </div>
             {error && (
