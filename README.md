@@ -110,3 +110,6 @@ This setup only needs to be completed once; a "GearShareLauncher" file will be c
 3. Right click "launch gearshare webapp" -> Run as administrator
 
 4. You may receive warnings from antivirus, this is due to the auto installation script being marked as a virus - you can safely ignore.
+
+## Presentation Link
+https://www.canva.com/design/DAGX1dMnTW8/Gb5ZxvfXZS-GevnBYfR5pA/edit
