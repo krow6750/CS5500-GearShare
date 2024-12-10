@@ -44,7 +44,7 @@ struct RepairListView: View {
                             }) {
                                 Image(systemName: "pencil")
                             }
-                            .buttonStyle(BorderlessButtonStyle())  // Added to prevent interference
+                            .buttonStyle(BorderlessButtonStyle())  
                         }
                     }
                 }

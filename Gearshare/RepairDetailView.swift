@@ -73,6 +73,3 @@ struct RepairDetailView: View {
     }
 }
 
-#Preview {
-    RepairDetailView(repair: RepairItem())
-}
